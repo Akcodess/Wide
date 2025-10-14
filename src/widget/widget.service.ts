@@ -1,53 +1,36 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { from, map, of, switchMap, throwError, tap } from 'rxjs';
+import { Repository, UpdateResult } from 'typeorm';
+import { from, map, of, switchMap, throwError, tap, catchError, defer, forkJoin, Observable } from 'rxjs';
 
 import { Widget } from './widget.entity';
 import { PageWidget } from '../widget-pagecode/page-widget.entity';
 import { PageWidgetPosition } from '../widget-positioning/page-widget-position.entity';
 import { UserWidgetPosition } from '../user-widget/user-widget-position.entity';
 import { Setting } from '../setting/setting.entity';
+import { TenantConnectionService } from '../tenant/tenant-connection.service';
 import { CreateWidgetRequestDto } from './dto/create-widget.request.dto';
 import { WidgetItemDto } from './dto/get-widgets.response.dto';
 import { GetWidgetsQueryDto } from './dto/get-widgets.query.dto';
-import { WidgetMessage } from './constants/widget.enums';
+import { WidgetMessage, WidgetStatus } from './constants/widget.enums';
+import { UpdateWidgetDto } from './dto/update-widget.request.dto';
 
 @Injectable()
 export class WidgetService {
   private readonly logger = new Logger(WidgetService.name);
-  constructor(
-    @InjectRepository(Widget) private readonly widgetRepo: Repository<Widget>,
-    @InjectRepository(PageWidget) private readonly pageWidgetRepo: Repository<PageWidget>,
-    @InjectRepository(PageWidgetPosition) private readonly pageWidgetPositionRepo: Repository<PageWidgetPosition>,
-    @InjectRepository(UserWidgetPosition) private readonly userWidgetPositionRepo: Repository<UserWidgetPosition>,
-    @InjectRepository(Setting) private readonly settingRepo: Repository<Setting>,
-  ) { }
+  private widgetRepo!: Repository<Widget>;
+  private pageWidgetRepo!: Repository<PageWidget>;
+  private pageWidgetPositionRepo!: Repository<PageWidgetPosition>;
+  private userWidgetPositionRepo!: Repository<UserWidgetPosition>;
+  private settingRepo!: Repository<Setting>;
 
-  createWidget(body: CreateWidgetRequestDto, userId: number | string) {
-    const params = {
-      widgetConfig: JSON.stringify(body?.data?.widData ?? {}),
-      applicationCode: body?.data?.applicationCode,
-      createdBy: userId || null,
-    } as any;
+  constructor(private readonly tenantConn: TenantConnectionService) { }
 
-    const created = this.widgetRepo.create(params as Partial<Widget>);
-    return from(this.widgetRepo.save(created)).pipe(
-      tap(() => this.logger.log(`CreateWidget payload applicationCode=${body?.data?.applicationCode}, pageCode=${body?.data?.pageCode}`)),
-      switchMap((saved: Widget) =>
-        from(
-          this.pageWidgetRepo.insert({
-            applicationCode: body?.data?.applicationCode,
-            pageCode: body?.data?.pageCode,
-            widgetId: saved.id,
-            createdBy: userId || null,
-          } as any),
-        ).pipe(
-          tap(() => this.logger.log(`Widget created successfully id=${saved.id}`)),
-          map(() => ({ widgetId: saved.id })),
-        ),
-      ),
-    );
+  private async ensureRepos(tenantCode: string): Promise<void> {
+    this.widgetRepo = await this.tenantConn.getRepository(Widget, tenantCode);
+    this.pageWidgetRepo = await this.tenantConn.getRepository(PageWidget, tenantCode);
+    this.pageWidgetPositionRepo = await this.tenantConn.getRepository(PageWidgetPosition, tenantCode);
+    this.userWidgetPositionRepo = await this.tenantConn.getRepository(UserWidgetPosition, tenantCode);
+    this.settingRepo = await this.tenantConn.getRepository(Setting, tenantCode);
   }
 
   private isAgentSpecific(applicationCode: string, pageCode: string) {
@@ -68,31 +51,30 @@ export class WidgetService {
   private getPositionMap(applicationCode: string, pageCode: string, userId: number | string, isAgentSpecific: boolean) {
     const fetchPositions$ = isAgentSpecific
       ? from(
-          this.userWidgetPositionRepo.find({
-            where: { applicationCode, userId: String(userId) },
-            select: ['widgetId', 'position'],
-          }) as any,
-        ).pipe(
-          switchMap((positions: any[]) =>
-            positions.length
-              ? of(positions)
-              : (from(
-                  this.pageWidgetPositionRepo.find({
-                    where: { applicationCode, pageCode },
-                    select: ['widgetId', 'position'],
-                  }) as any,
-                ) as any),
-          ),
-        )
+        this.userWidgetPositionRepo.find({
+          where: { applicationCode, userId: String(userId) },
+          select: ['widgetId', 'position'],
+        }) as any,
+      ).pipe(
+        switchMap((positions: any[]) =>
+          positions.length
+            ? of(positions)
+            : (from(
+              this.pageWidgetPositionRepo.find({
+                where: { applicationCode, pageCode },
+                select: ['widgetId', 'position'],
+              }) as any,
+            ) as any),
+        ),
+      )
       : (from(
-          this.pageWidgetPositionRepo.find({
-            where: { applicationCode, pageCode },
-            select: ['widgetId', 'position'],
-          }) as any,
-        ) as any);
+        this.pageWidgetPositionRepo.find({
+          where: { applicationCode, pageCode },
+          select: ['widgetId', 'position'],
+        }) as any,
+      ) as any);
 
     return fetchPositions$.pipe(
-      tap((positions) => this.logger.log(`Positions loaded=${Array.isArray(positions) ? positions.length : 0} agentSpecific=${isAgentSpecific} applicationCode=${applicationCode} pageCode=${pageCode}`)),
       map((positions: Array<{ WidgetId: string; Position: string }>) => {
         const mapObj: Record<string, any> = {};
         for (const pos of positions) {
@@ -131,7 +113,7 @@ export class WidgetService {
         UserIds: safeUserIds
       } as WidgetItemDto;
     } catch (error) {
-      throw new BadRequestException(WidgetMessage?.InvalidWidgetConfig);
+      throw new BadRequestException({ Message: WidgetMessage?.InvalidWidgetConfig, Status: WidgetStatus.BadRequest });
     }
   }
 
@@ -139,7 +121,7 @@ export class WidgetService {
     return from(
       this.widgetRepo
         .createQueryBuilder('w')
-        .innerJoin(PageWidget, 'pw', 'pw.WidgetId = w.Id AND pw.ApplicationCode = :applicationCode AND pw.PageCode = :pageCode', { applicationCode, pageCode })
+        .innerJoin(this.pageWidgetRepo.metadata.tableName, 'pw', 'pw.WidgetId = w.Id AND pw.ApplicationCode = :applicationCode AND pw.PageCode = :pageCode', { applicationCode, pageCode })
         .where('w.ApplicationCode = :applicationCode', { applicationCode })
         .andWhere('w.EntityState = :entityState', { entityState: 1 })
         .andWhere('w.IsShow = :isShow', { isShow: 1 })
@@ -161,29 +143,133 @@ export class WidgetService {
           'pw.PageCode as PageCode',
         ])
         .getRawMany(),
-    ).pipe(
-      tap((widgets) => this.logger.log(`Widgets loaded=${Array.isArray(widgets) ? widgets.length : 0} applicationCode=${applicationCode} pageCode=${pageCode} userId=${userId}`)),
     );
   }
 
-  getWidgets(params: GetWidgetsQueryDto, userId: number | string) {
-    const { applicationCode, pageCode } = params;
+  private pascalToCamel$(obj: Record<string, any>) {
+    return of(obj ?? {}).pipe(
+      map((o) =>
+        Object.fromEntries(
+          Object.entries(o).map(([k, v]) => [k[0].toLowerCase() + k.slice(1), v]),
+        ),
+      ),
+    );
+  }
 
-    return this.findWidgets(applicationCode, pageCode, userId).pipe(
-      tap(() => this.logger.log(`GetWidgets called applicationCode=${applicationCode} pageCode=${pageCode} userId=${userId}`)),
-      switchMap((widgets) => {
-        if (!widgets.length) {
-          this.logger.warn(WidgetMessage?.NoWidgetsFound);
-          return throwError(() => new NotFoundException(WidgetMessage?.NoWidgetsFound));
-        }
-        return this.isAgentSpecific(applicationCode, pageCode).pipe(
-          switchMap((agentSpecific) =>
-            this.getPositionMap(applicationCode, pageCode, userId, agentSpecific).pipe(
-              map((positionMap : Record<string, any>) => widgets.map((w) => this.buildWidgetResponse(w, positionMap))),
+  private buildWidgetLayoutUpdate$(payload: Array<Record<string, any>>, userId: number | string): Observable<UpdateResult>[] {
+    return payload.map((changeItem) => {
+      const layout = {
+        x: Number(changeItem?.x) || 0,
+        y: Number(changeItem?.y) || 0,
+        w: Number(changeItem?.w) || 0,
+        h: Number(changeItem?.h) || 0,
+      };
+      const data: Partial<Widget> = {
+        widgetConfig: JSON.stringify(layout),
+        editedOn: new Date(),
+        editedBy: Number(userId) || null,
+      } as any;
+      return defer(() => this.widgetRepo.update({ id: Number(changeItem?.i) }, data));
+    });
+  }
+
+  createWidget(body: CreateWidgetRequestDto, userId: number | string, tenantCode: string) {
+    const ensure$ = from(this.ensureRepos(tenantCode));
+    const params = { widgetConfig: JSON.stringify(body?.data?.widData ?? {}), applicationCode: body?.data?.applicationCode, createdBy: userId || null } as any;
+
+    return ensure$.pipe(
+      switchMap(() => {
+        const created = this.widgetRepo.create(params as Partial<Widget>);
+        return from(this.widgetRepo.save(created)).pipe(
+          switchMap((saved: Widget) =>
+            from(
+              this.pageWidgetRepo.insert({
+                applicationCode: body?.data?.applicationCode,
+                pageCode: body?.data?.pageCode,
+                widgetId: saved.id,
+                createdBy: userId || null,
+              } as any),
+            ).pipe(
+              tap(() => this.logger.log(WidgetMessage?.AddedSuccessfully)),
+              map(() => ({ widgetId: saved.id })),
             ),
           ),
         );
       }),
+    );
+  }
+
+  getWidgets(params: GetWidgetsQueryDto, userId: number | string, tenantCode: string) {
+    const { applicationCode, pageCode } = params;
+
+    const ensure$ = from(this.ensureRepos(tenantCode));
+    return ensure$.pipe(
+      switchMap(() => this.findWidgets(applicationCode, pageCode, userId)),
+      tap(() => this.logger.log(WidgetMessage?.GetWidgetsCalled)),
+      switchMap((widgets) => {
+        if (!widgets.length) {
+          this.logger.warn(WidgetMessage?.NoWidgetsFound);
+          return throwError(() => new NotFoundException({ Message: WidgetMessage?.NoWidgetsFound, Status: WidgetStatus.NotFound }));
+        }
+        return this.isAgentSpecific(applicationCode, pageCode).pipe(
+          switchMap((agentSpecific) =>
+            this.getPositionMap(applicationCode, pageCode, userId, agentSpecific).pipe(
+              map((positionMap: Record<string, any>) => widgets.map((w) => this.buildWidgetResponse(w, positionMap))),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  updateWidget(id: string, updateDto: UpdateWidgetDto, tenantCode: string, userId: number | string) {
+    const ensure$ = from(this.ensureRepos(tenantCode));
+
+    return ensure$.pipe(
+      switchMap(() => {
+        if (Number.isNaN(Number(id))) {
+          this.logger.warn(`${WidgetMessage?.UdpadteInvalidUserId} ${id}`);
+          return throwError(() => new BadRequestException({ Message: WidgetMessage?.InvalidUserId, Status: WidgetStatus.BadRequest }));
+        }
+        return from(this.widgetRepo.findOne({ where: { id: Number(id) } }));
+      }),
+      switchMap((existingWidget) => {
+        if (!existingWidget) {
+          this.logger.warn(`${WidgetMessage?.UpdateWidgetNotFound} ${id}`);
+          return throwError(() => new NotFoundException({ Message: WidgetMessage?.WidgetNotFound, Status: WidgetStatus.NotFound }));
+        }
+
+        return this.pascalToCamel$((updateDto as any)?.data ?? {}).pipe(
+          map((camelData) => ({ ...camelData, editedBy: Number(userId) })),
+          switchMap((camelData) =>
+            from(this.widgetRepo.save(this.widgetRepo.merge(existingWidget, camelData))).pipe(
+              catchError((err) =>
+                throwError(() => new BadRequestException({ Message: err?.message, Status: WidgetStatus.BadRequest })),
+              ),
+            ),
+          ),
+        );
+      }),
+      tap((savedWidget) => this.logger.log(`${WidgetMessage?.WidgetUpdated} Id: ${savedWidget?.id}`)),
+      map((savedWidget) => ({ WidgetId: savedWidget.id }))
+    );
+  }
+
+  updateWidgetLayout(updateDto: any, tenantCode: string, userId: number | string) {
+    const ensure$ = from(this.ensureRepos(tenantCode));
+
+    return ensure$.pipe(
+      switchMap(() => {
+        const payload = Array.isArray(updateDto) ? updateDto : [];
+        if (!payload.length) {
+          this.logger.warn(WidgetMessage?.ErrorUpdating);
+          return throwError(() => new BadRequestException({ Message: WidgetMessage?.InvalidPayload, Status: WidgetStatus.BadRequest }));
+        }
+        return forkJoin(this.buildWidgetLayoutUpdate$(payload, userId));
+      }),
+      tap(() => this.logger.log(WidgetMessage?.WidgetLayoutUpdated)),
+      map(() => ({ WidgetId: null })),
+      catchError((err) => throwError(() => new BadRequestException({ Message: err?.message, Status: WidgetStatus.BadRequest }))),
     );
   }
 }

@@ -12,7 +12,8 @@ import { JwtPayloadDto } from './dto/jwt-payload.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthMessage, ErrorMessage, LogMessage } from './constants/auth.enums';
-import {NucleusApiResponse} from './interfaces/nucleus-api-response.interface';
+import { TenantConnectionService } from '../tenant/tenant-connection.service';
+import { NucleusApiResponse } from './interface/nucleus-api-response.interface';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +22,8 @@ export class AuthService {
   private nucleusTokens: Record<string, string> = {};
 
   constructor(private configService: ConfigService,
-    private jwtService: JwtService) { }
+    private jwtService: JwtService,
+    private tenantConn: TenantConnectionService) { }
 
   private async callNucleusApi(tenantCode: string, authCode: string, role: string): Promise<NucleusApiResponse> {
     try {
@@ -54,7 +56,7 @@ export class AuthService {
     try {
       const { tenantCode, authCode, role } = registerDto;
       const validateResponse = await this.callNucleusApi(tenantCode, authCode, role);
-      
+
       if (!validateResponse || validateResponse.EvType === 'Failed') {
         throw new InternalServerErrorException(ErrorMessage.NucleusValidationFailed);
       }
@@ -93,6 +95,9 @@ export class AuthService {
         EvType: validateResponse?.EvType ?? '',
         EvCode: validateResponse?.EvCode ?? '',
       };
+
+      // Ensure tenant database exists and is initialized after successful register
+      await this.tenantConn.ensureTenant(tenantCode);
 
       this.logger.log(`${LogMessage.RegistrationSuccessPrefix} ${plainJwtPayload.userId}`);
 
