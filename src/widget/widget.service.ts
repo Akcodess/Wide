@@ -14,6 +14,7 @@ import { GetWidgetsQueryDto } from './dto/get-widgets.query.dto';
 import { WidgetMessage, WidgetStatus } from './constants/widget.enums';
 import { UpdateWidgetDto } from './dto/update-widget.request.dto';
 import { GetWidgetsByUserIdDto } from './dto/get-widgets-by-user-id.request.dto';
+import { CreateWidgetMappingDto } from './dto/create-widget-mapping.request.dto';
 
 @Injectable()
 export class WidgetService {
@@ -226,7 +227,7 @@ export class WidgetService {
             : [];
       } catch { }
 
-      return {...w, PageCode: w.page_widgets?.PageCode, WidgetId: w.Id, WidgetConfig: JSON.stringify(cfg), UserIds: uIds};
+      return { ...w, PageCode: w.page_widgets?.PageCode, WidgetId: w.Id, WidgetConfig: JSON.stringify(cfg), UserIds: uIds };
     });
   }
 
@@ -416,6 +417,30 @@ export class WidgetService {
         this.logger.error(`${WidgetMessage?.ErrorFetchingWidgets} ${userId}`, err);
         return throwError(() => new BadRequestException({ Message: err?.message, Status: WidgetStatus.BadRequest }));
       }),
+    );
+  }
+
+  createWidgetMapping(body: CreateWidgetMappingDto, tenantCode: string) {
+    const { widgetId, userId } = body;
+
+    return from(this.ensureRepos(tenantCode)).pipe(
+      switchMap(() =>
+        from(this.widgetRepo.findOne({ where: { id: Number(widgetId) } }))
+      ),
+      switchMap((widget) => {
+        if (!widget) {
+          this.logger.warn(`${WidgetMessage?.WidgetNotFound} ${widgetId}`);
+          return throwError(() => new NotFoundException({ Message: WidgetMessage?.WidgetNotFound, Status: WidgetStatus.NotFound }));
+        }
+
+        const userIdsStr = JSON.stringify(Array.isArray(userId) ? userId : [userId]);
+
+        return from(this.widgetRepo.update({ id: Number(widgetId) }, { userIds: userIdsStr as any }));
+      }),
+      catchError((err) => {
+        this.logger.error(WidgetMessage?.ErrorUpdatingMapping, err);
+        return throwError(() => new BadRequestException({ Message: err?.message || WidgetMessage?.ErrorUpdatingMapping, Status: WidgetStatus.BadRequest }));
+      })
     );
   }
 }

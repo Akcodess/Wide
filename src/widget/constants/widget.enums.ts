@@ -23,7 +23,9 @@ export enum WidgetMessage {
   WidgetCodeNotFound = 'WidgetCode not found!',
   WidgetFoundWithCode = "Widget found with code:",
   WidgetCodeMustBeString = "WidgetCode must be a string",
-  ErrorFetchingWidgets = "Error fetching widgets for user"
+  ErrorFetchingWidgets = "Error fetching widgets for user",
+  WidgetMappingCreated ="Widget mapping created successfully",
+  ErrorUpdatingMapping = "Error updating widget mapping",
 }
 
 export enum WidgetEvType {
@@ -38,6 +40,7 @@ export enum WidgetEvCode {
   UpdateWidgetLayout = 'UpdateWidgetLayout',
   DeleteWidget = 'DeleteWidget',
   GetWidgetByCode = 'GetWidgetByCode',
+  UpdateWidgetMapping = "UpdateWidgetMapping"
 }
 
 export enum WidgetStatus {

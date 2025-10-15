@@ -17,10 +17,28 @@ import { GetWidgetByCodeDto } from './dto/get-widget-by-code.request.dto';
 import { buildResponse } from '../utils/build-response.util';
 import { GetWidgetsByUserIdDto } from './dto/get-widgets-by-user-id.request.dto';
 import { GetWidgetsByUserIdResponseDto } from './dto/get-widgets-by-user-id.response.dto';
+import { CreateWidgetMappingDto } from './dto/create-widget-mapping.request.dto';
+import { CreateWidgetMappingResponseDto } from './dto/create-widget-mapping.response.dto';
 
 @Controller('wide-api/widget')
 export class WidgetController {
-  constructor(private readonly widgetService: WidgetService) { }
+  constructor(private readonly widgetService: WidgetService) {}
+
+  @Patch('/user')
+  @UseGuards(AuthGuard('jwt'))
+  createWidgetMapping(@Body() body: CreateWidgetMappingDto, @Req() req: any): Observable<CreateWidgetMappingResponseDto> {
+    const tenantCode = req.user?.tenantCode ?? '';
+    return this.widgetService.createWidgetMapping(body, tenantCode).pipe(
+      map(() =>
+        buildResponse(CreateWidgetMappingResponseDto, {
+          Status: WidgetStatus.Ok,
+          Message: WidgetMessage.WidgetMappingCreated,
+          EvCode: WidgetEvCode.UpdateWidgetMapping,
+          EvType: WidgetEvType.Success,
+        }),
+      ),
+    )
+  }
 
   @Get('/user')
   @UseGuards(AuthGuard('jwt'))
