@@ -5,5 +5,6 @@ export interface BaseResponseOptions<T = any> {
     EvType?: string;
     data?: T;
     Widget?: T;
+    Widgets?: T;
     TimeStamp?: string;
 }

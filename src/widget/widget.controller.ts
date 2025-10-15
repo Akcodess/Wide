@@ -14,7 +14,7 @@ import { UpdateWidgetResponseDto } from './dto/update-widget.response.dto';
 import { UpdateWidgetLayoutItemDto } from './dto/update-widget-layout.request.dto';
 import { GetWidgetByCodeResponseDto } from './dto/get-widget-by-code.response.dto';
 import { GetWidgetByCodeDto } from './dto/get-widget-by-code.request.dto';
-import { buildResponse } from './utils/build-response.util';
+import { buildResponse } from '../utils/build-response.util';
 
 @Controller('wide-api/widget')
 export class WidgetController {

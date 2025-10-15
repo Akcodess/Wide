@@ -12,5 +12,6 @@ export function buildResponse<T>(dtoClass: new (...args: any[]) => T, options: B
         TimeStamp: options.TimeStamp ?? timestamp,
         ...(options.data ? { data: options.data } : {}),
         ...(options.Widget ? { Widget: options.Widget } : {}),
+        ...(options.Widgets ? { Widgets: options.Widgets } : {}),
     });
 }
