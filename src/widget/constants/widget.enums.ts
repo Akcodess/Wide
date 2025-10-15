@@ -4,10 +4,12 @@ export enum WidgetMessage {
   NoWidgetsFound = 'No widgets found for the given user and page.',
   AddedSuccessfully = 'Widget added successfully.',
   WidgetUpdated = 'Widget updated successfully.',
+  WidgetDeleted = 'Widget deleted successfully.',
   UdpadteInvalidUserId = "UpdateWidget invalid Id received:",
   UpdateWidgetNotFound = "UpdateWidget widget not found. Id:",
   ErrorCreating = 'Error creating widget.',
   ErrorUpdating = 'Error updating widget.',
+  ErrorDeleting = 'Some error occurred while deleting widget.',
   InvalidWidgetConfig = 'Invalid widget configuration.',
   ApplicationCodeRequired = 'applicationCode is required',
   PageCodeRequired = 'pageCode is required',
@@ -15,6 +17,12 @@ export enum WidgetMessage {
   WidgetNotFound = 'Widget not found',
   InvalidPayload = "Invalid payload: must be a non-empty array.",
   WidgetLayoutUpdated = "Widget layout updated successfully",
+  DeleteNotAllowed = "Widget cannot be deleted",
+  WidgetCodeRequired = 'widgetCode is required',
+  WidgetFoundByCode = 'Widget found by WidgetCode!',
+  WidgetCodeNotFound = 'WidgetCode not found!',
+  WidgetFoundWithCode = "Widget found with code:",
+  WidgetCodeMustBeString = "WidgetCode must be a string"
 }
 
 export enum WidgetEvType {
@@ -27,6 +35,8 @@ export enum WidgetEvCode {
   AddWidget = 'AddWidget',
   UpdateWidget = 'UpdateWidget',
   UpdateWidgetLayout = 'UpdateWidgetLayout',
+  DeleteWidget = 'DeleteWidget',
+  GetWidgetByCode = 'GetWidgetByCode',
 }
 
 export enum WidgetStatus {

@@ -272,4 +272,52 @@ export class WidgetService {
       catchError((err) => throwError(() => new BadRequestException({ Message: err?.message, Status: WidgetStatus.BadRequest }))),
     );
   }
+
+  getWidgetByWidgetCode(code: string, tenantCode: string) {
+    const ensure$ = from(this.ensureRepos(tenantCode));
+    return ensure$.pipe(
+      switchMap(() => {
+        return from(
+          this.widgetRepo.findOne({ where: { widgetCode: code } })
+        );
+      }),
+      switchMap((widget) => {
+        if (!widget) {
+          return throwError(() => new NotFoundException({ Message: WidgetMessage.WidgetCodeNotFound, Status: WidgetStatus.NotFound }),
+          );
+        }
+        return of(widget);
+      }),
+      tap(() => this.logger.log(`${WidgetMessage?.WidgetFoundWithCode} ${code}`)),
+      catchError((err) => throwError(() => new BadRequestException({ Message: err?.message ?? WidgetMessage.ErrorUpdating, Status: WidgetStatus.BadRequest })))
+    );
+  }
+
+  deleteWidget(id: string, tenantCode: string) {
+    const ensure$ = from(this.ensureRepos(tenantCode));
+    return ensure$.pipe(
+      switchMap(() => {
+        if (Number.isNaN(Number(id))) {
+          return throwError(() => new BadRequestException({ Message: WidgetMessage.InvalidUserId, Status: WidgetStatus.BadRequest }));
+        }
+        const deleteRelations$ = forkJoin([
+          defer(() => this.pageWidgetRepo.delete({ widgetId: Number(id) } as any)),
+          defer(() => this.pageWidgetPositionRepo.delete({ widgetId: Number(id) } as any)),
+          defer(() => this.userWidgetPositionRepo.delete({ widgetId: Number(id) } as any)),
+        ]);
+        return deleteRelations$.pipe(
+          switchMap(() => defer(() => this.widgetRepo.delete({ id: Number(id) } as any))),
+          switchMap((result) => {
+            if (!result?.affected) {
+              return throwError(() => new NotFoundException({ Message: WidgetMessage.DeleteNotAllowed, Status: WidgetStatus.NotFound }));
+            }
+            return of({ ok: true });
+          }),
+        );
+      }),
+      tap(() => this.logger.log(WidgetMessage.WidgetDeleted)),
+      map(() => ({ WidgetId: Number(id) })),
+      catchError((err) => throwError(() => new BadRequestException({ Message: err?.message ?? WidgetMessage.ErrorDeleting, Status: WidgetStatus.BadRequest }))),
+    );
+  }
 }
