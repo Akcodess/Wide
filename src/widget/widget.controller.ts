@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseGuards, Req, Patch, HttpCode, Param, Put, Delete, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards, Req, Patch, Param, Put, Delete, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { map, Observable } from 'rxjs';
 
@@ -15,10 +15,30 @@ import { UpdateWidgetLayoutItemDto } from './dto/update-widget-layout.request.dt
 import { GetWidgetByCodeResponseDto } from './dto/get-widget-by-code.response.dto';
 import { GetWidgetByCodeDto } from './dto/get-widget-by-code.request.dto';
 import { buildResponse } from '../utils/build-response.util';
+import { GetWidgetsByUserIdDto } from './dto/get-widgets-by-user-id.request.dto';
+import { GetWidgetsByUserIdResponseDto } from './dto/get-widgets-by-user-id.response.dto';
 
 @Controller('wide-api/widget')
 export class WidgetController {
   constructor(private readonly widgetService: WidgetService) { }
+
+  @Get('/user')
+  @UseGuards(AuthGuard('jwt'))
+  getWidgetsByUserId(@Query() query: GetWidgetsByUserIdDto, @Req() req: any): Observable<GetWidgetsByUserIdResponseDto> {
+    const tenantCode = req.user?.tenantCode ?? '';
+    return this.widgetService.getWidgetsByUserId(query, tenantCode).pipe(
+      map((widgets) =>
+        buildResponse(GetWidgetsByUserIdResponseDto, {
+          Status: WidgetStatus.Ok,
+          Message: WidgetMessage.RetrievedSuccessfully,
+          WidgetList: widgets,
+          EvType:  WidgetEvType.Success,
+          EvCode: WidgetEvCode.GetWidget,
+        }),
+      ),
+    );
+  }
+
   @Post()
   @UseGuards(AuthGuard('jwt'))
   createWidget(@Body() body: CreateWidgetRequestDto, @Req() req: any): Observable<CreateWidgetResponseDto> {

@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
-import { Repository, UpdateResult } from 'typeorm';
+import { Repository, UpdateResult, IsNull, Raw } from 'typeorm';
 import { from, map, of, switchMap, throwError, tap, catchError, defer, forkJoin, Observable } from 'rxjs';
 
 import { Widget } from './widget.entity';
@@ -13,6 +13,7 @@ import { WidgetItemDto } from './dto/get-widgets.response.dto';
 import { GetWidgetsQueryDto } from './dto/get-widgets.query.dto';
 import { WidgetMessage, WidgetStatus } from './constants/widget.enums';
 import { UpdateWidgetDto } from './dto/update-widget.request.dto';
+import { GetWidgetsByUserIdDto } from './dto/get-widgets-by-user-id.request.dto';
 
 @Injectable()
 export class WidgetService {
@@ -173,6 +174,88 @@ export class WidgetService {
     });
   }
 
+  private fetchWidgets(applicationCode: string, pageCode: string, userId: string): Observable<Widget[]> {
+    return from(
+      this.widgetRepo.find({
+        relations: ['pageWidgets'],
+        where: [
+          { applicationCode, entityState: 1, isShow: 1, userIds: IsNull() },
+          { applicationCode, entityState: 1, isShow: 1, userIds: Raw((alias) => `${alias} = '[]'`) },
+          { applicationCode, entityState: 1, isShow: 1, userIds: Raw((alias) => `JSON_CONTAINS(${alias}, '[${userId}]')`) },
+        ],
+      }),
+    ).pipe(
+      switchMap((widgets) => {
+        if (!widgets.length) {
+          this.logger.warn(`${WidgetMessage?.NoWidgetsFound} ${applicationCode} - ${pageCode} - user ${userId}`);
+          return throwError(() => new NotFoundException({ Message: WidgetMessage?.NoWidgetsFound, Status: WidgetStatus.NotFound }));
+        }
+        return from([widgets]);
+      }),
+    );
+  }
+
+  private mergeWidgetWithPositions(widgets: Widget[], positions: Array<{ widgetId: string; position: string }>): Widget[] {
+    const posMap = positions.reduce((acc, p) => {
+      try {
+        acc[p.widgetId] = JSON.parse(p.position);
+      } catch {
+        acc[p.widgetId] = null;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
+    return widgets.map((w: any) => {
+      let cfg: any = {};
+
+      // Parse WidgetConfig if available
+      try {
+        cfg = w.WidgetConfig ? JSON.parse(w.WidgetConfig) : {};
+      } catch { }
+
+      // Override config if position exists
+      if (posMap[w.Id]) cfg = posMap[w.Id];
+
+      // Parse UserIds
+      let uIds: any[] = [];
+      try {
+        uIds = Array.isArray(w.UserIds)
+          ? w.UserIds
+          : typeof w.UserIds === 'string'
+            ? JSON.parse(w.UserIds)
+            : [];
+      } catch { }
+
+      return {...w, PageCode: w.page_widgets?.PageCode, WidgetId: w.Id, WidgetConfig: JSON.stringify(cfg), UserIds: uIds};
+    });
+  }
+
+  private applyPositionOverrides(widgets: Widget[], applicationCode: string, pageCode: string, userId: string) {
+    return from(this.settingRepo.findOne({ where: { applicationCode, pageCode } })).pipe(
+      map((settingData) => {
+        if (!settingData?.settingConfig) return true;
+        try {
+          const config = Array.isArray(settingData.settingConfig) ? settingData.settingConfig : [settingData.settingConfig];
+          const agent = config.find((s) => s.hasOwnProperty('isOverrideAgentMapping'));
+          return agent ? agent['isOverrideAgentMapping'] === 'true' : true;
+        } catch {
+          return true;
+        }
+      }),
+      switchMap((isAgentSpecific) =>
+        isAgentSpecific
+          ? from(this.userWidgetPositionRepo.find({ where: { applicationCode, userId } }))
+          : of([])
+      ),
+      switchMap((positions) =>
+        positions.length
+          ? of(positions)
+          : from(this.pageWidgetPositionRepo.find({ where: { applicationCode, pageCode } }))
+      ),
+      map((positions) => this.mergeWidgetWithPositions(widgets, positions))
+    );
+  }
+
   createWidget(body: CreateWidgetRequestDto, userId: number | string, tenantCode: string) {
     const ensure$ = from(this.ensureRepos(tenantCode));
     const params = { widgetConfig: JSON.stringify(body?.data?.widData ?? {}), applicationCode: body?.data?.applicationCode, createdBy: userId || null } as any;
@@ -318,6 +401,21 @@ export class WidgetService {
       tap(() => this.logger.log(WidgetMessage.WidgetDeleted)),
       map(() => ({ WidgetId: Number(id) })),
       catchError((err) => throwError(() => new BadRequestException({ Message: err?.message ?? WidgetMessage.ErrorDeleting, Status: WidgetStatus.BadRequest }))),
+    );
+  }
+
+  getWidgetsByUserId(query: GetWidgetsByUserIdDto, tenantCode: string) {
+    const { applicationCode, pageCode, userId } = query;
+
+    return from(this.ensureRepos(tenantCode)).pipe(
+      switchMap(() => this.fetchWidgets(applicationCode, pageCode, userId)),
+      switchMap((widgets) =>
+        this.applyPositionOverrides(widgets, applicationCode, pageCode, userId)
+      ),
+      catchError((err) => {
+        this.logger.error(`${WidgetMessage?.ErrorFetchingWidgets} ${userId}`, err);
+        return throwError(() => new BadRequestException({ Message: err?.message, Status: WidgetStatus.BadRequest }));
+      }),
     );
   }
 }

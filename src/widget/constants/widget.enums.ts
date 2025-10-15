@@ -22,7 +22,8 @@ export enum WidgetMessage {
   WidgetFoundByCode = 'Widget found by WidgetCode!',
   WidgetCodeNotFound = 'WidgetCode not found!',
   WidgetFoundWithCode = "Widget found with code:",
-  WidgetCodeMustBeString = "WidgetCode must be a string"
+  WidgetCodeMustBeString = "WidgetCode must be a string",
+  ErrorFetchingWidgets = "Error fetching widgets for user"
 }
 
 export enum WidgetEvType {
