@@ -17,12 +17,13 @@ import { GetWidgetByCodeDto } from './dto/get-widget-by-code.request.dto';
 import { buildResponse } from '../utils/build-response.util';
 import { GetWidgetsByUserIdDto } from './dto/get-widgets-by-user-id.request.dto';
 import { GetWidgetsByUserIdResponseDto } from './dto/get-widgets-by-user-id.response.dto';
-import { CreateWidgetMappingDto } from './dto/create-widget-mapping.request.dto';
+import { CreateWidgetMappingDto } from './dto/widget-mapping.request.dto';
 import { CreateWidgetMappingResponseDto } from './dto/create-widget-mapping.response.dto';
+import { DeleteWidgetUserMappingResponseDto } from './dto/delete-widget-mapping.response';
 
 @Controller('wide-api/widget')
 export class WidgetController {
-  constructor(private readonly widgetService: WidgetService) {}
+  constructor(private readonly widgetService: WidgetService) { }
 
   @Patch('/user')
   @UseGuards(AuthGuard('jwt'))
@@ -40,6 +41,22 @@ export class WidgetController {
     )
   }
 
+  @Delete('/user')
+  @UseGuards(AuthGuard('jwt'))
+  deleteWidgetUserMapping(@Body() body: CreateWidgetMappingDto, @Req() req: any): Observable<DeleteWidgetUserMappingResponseDto> {
+    const tenantCode = req.user?.tenantCode ?? '';
+    return this.widgetService.deleteWidgetUserMapping(body, tenantCode).pipe(
+      map(() =>
+        buildResponse(DeleteWidgetUserMappingResponseDto, {
+          Status: WidgetStatus.Ok,
+          Message: `UserId(s) ${body?.userId} removed from widget mapping successfully!`,
+          EvCode: WidgetEvCode.UpdateWidgetMapping,
+          EvType: WidgetEvType.Success,
+        }),
+      ),
+    );
+  }
+
   @Get('/user')
   @UseGuards(AuthGuard('jwt'))
   getWidgetsByUserId(@Query() query: GetWidgetsByUserIdDto, @Req() req: any): Observable<GetWidgetsByUserIdResponseDto> {
@@ -50,7 +67,7 @@ export class WidgetController {
           Status: WidgetStatus.Ok,
           Message: WidgetMessage.RetrievedSuccessfully,
           WidgetList: widgets,
-          EvType:  WidgetEvType.Success,
+          EvType: WidgetEvType.Success,
           EvCode: WidgetEvCode.GetWidget,
         }),
       ),

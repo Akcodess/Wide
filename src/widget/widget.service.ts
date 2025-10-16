@@ -14,7 +14,7 @@ import { GetWidgetsQueryDto } from './dto/get-widgets.query.dto';
 import { WidgetMessage, WidgetStatus } from './constants/widget.enums';
 import { UpdateWidgetDto } from './dto/update-widget.request.dto';
 import { GetWidgetsByUserIdDto } from './dto/get-widgets-by-user-id.request.dto';
-import { CreateWidgetMappingDto } from './dto/create-widget-mapping.request.dto';
+import { CreateWidgetMappingDto } from './dto/widget-mapping.request.dto';
 
 @Injectable()
 export class WidgetService {
@@ -441,6 +441,42 @@ export class WidgetService {
         this.logger.error(WidgetMessage?.ErrorUpdatingMapping, err);
         return throwError(() => new BadRequestException({ Message: err?.message || WidgetMessage?.ErrorUpdatingMapping, Status: WidgetStatus.BadRequest }));
       })
+    );
+  }
+
+  deleteWidgetUserMapping(body: CreateWidgetMappingDto, tenantCode: string) {
+    const { widgetId, userId } = body;
+    const userIdsToRemove = Array.isArray(userId) ? userId : [userId];
+
+    return from(this.ensureRepos(tenantCode)).pipe(
+      switchMap(() => this.widgetRepo.findOne({ where: { id: widgetId } })),
+      switchMap((existingWidget: any) => {
+        if (!existingWidget) {
+          return throwError(() => new NotFoundException({ Status: 404, Message: `Widget ${widgetId} not found` }));
+        }
+
+        let currentUserIds: number[] = [];
+        try {
+          currentUserIds = Array.isArray(existingWidget.userIds) ? (existingWidget.userIds as unknown as number[]) : JSON.parse(existingWidget.userIds || '[]');
+        } catch {
+          currentUserIds = [];
+        }
+
+        const updatedUserIds = currentUserIds.filter(
+          (id) => !userIdsToRemove.includes(id),
+        );
+
+        if (updatedUserIds.length === currentUserIds.length) {
+          return throwError(() => new NotFoundException({ Status: 404, Message: `UserId(s) ${userIdsToRemove.join(', ')} not found in widget mapping!` }),
+          );
+        }
+
+        existingWidget.userIds = JSON.stringify(updatedUserIds);
+        return from(this.widgetRepo.save(existingWidget)).pipe(
+          map(() => updatedUserIds)
+        )
+      }),
+      catchError((err) => throwError(() => new BadRequestException({ Status: err?.response?.Status || 500, Message: err?.response?.Message || 'Some error occurred while deleting widget user mapping.' })))
     );
   }
 }

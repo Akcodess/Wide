@@ -1,5 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { from, switchMap, throwError } from 'rxjs';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { catchError, from, map, switchMap, tap, throwError } from 'rxjs';
 import { Repository } from 'typeorm';
 
 import { GetWidgetByPageCodeRequestDto } from './dto/get-widget-by-pagecode.request.dto';
@@ -11,6 +11,7 @@ import { UserWidgetPosition } from '../user-widget/user-widget-position.entity';
 import { Setting } from '../setting/setting.entity';
 import { TenantConnectionService } from '../tenant/tenant-connection.service';
 import { WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
+import { CreatePageWidgetMappingDto } from './dto/page-widget-dts';
 
 @Injectable()
 export class WidgetPagecodeService {
@@ -77,6 +78,41 @@ export class WidgetPagecodeService {
         this.logger.log(WidgetMessage?.RetrievedSuccessfully);
         return from([this.transformWidgets(widgets)]);
       })
+    );
+  }
+
+  createMappingPageWidgetPosition(body: CreatePageWidgetMappingDto, tenantCode: string, userId: number) {
+    const ensure$ = from(this.ensureRepos(tenantCode));
+    const { pageCode, widgetId, applicationCode } = body;
+
+    return ensure$.pipe(
+      switchMap(() =>
+        from(this.pageWidgetRepo.findOne({
+          where: { pageCode: pageCode, widgetId: widgetId },
+        }),
+        ),
+      ),
+      switchMap((existingMapping) => {
+        if (!existingMapping) {
+          const pageWidget: any = {
+            pageCode: pageCode,
+            widgetId: widgetId,
+            applicationCode: applicationCode || null,
+            createdBy: userId || null,
+          };
+          return from(this.pageWidgetRepo.save(pageWidget)).pipe(
+            tap(() => this.logger.log(WidgetMessage?.PageWidgetMappingCreated)),
+          )
+        } else {
+          return from(
+            this.pageWidgetRepo.update({ widgetId: widgetId, applicationCode: applicationCode, pageCode: pageCode }, { editedBy: userId, editedOn: new Date() })).pipe(
+              tap(() => this.logger.log(WidgetMessage?.PageWidgetMappingUpdated)),
+            );
+        }
+      }),
+      catchError((err) =>
+        throwError(() => new BadRequestException({ Status: WidgetStatus?.InternalServerError, Message: err?.message})),
+      ),
     );
   }
 }
