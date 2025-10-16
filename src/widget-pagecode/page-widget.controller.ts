@@ -1,11 +1,12 @@
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, Delete } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
-import { CreatePageWidgetMappingDto, CreatePageWidgetMappingResponseDto } from './dto/page-widget-dts';
+import { CreatePageWidgetMappingDto, CreatePageWidgetMappingResponseDto } from './dto/page-widget-create-mapping.dto';
 import { WidgetPagecodeService } from './widget-pagecode.service';
-import { map } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { buildResponse } from '../utils/build-response.util';
 import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
+import { DeletePageWidgetMappingDto } from './dto/page-widget-delete-mapping.dto';
 
 @Controller('wide-api/page-widget')
 @UseGuards(AuthGuard('jwt'))
@@ -14,8 +15,7 @@ export class PageWidgetController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
-  @Post()
-  createMapping(@Body() body: CreatePageWidgetMappingDto, @Req() req: any) {
+  createMapping(@Body() body: CreatePageWidgetMappingDto, @Req() req: any): Observable<CreatePageWidgetMappingResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
     const userId = req.user?.userId ?? '';
 
@@ -25,6 +25,23 @@ export class PageWidgetController {
           Status: WidgetStatus?.Ok,
           Message: WidgetMessage?.PageWidgetMappingCreatedUpdated,
           EvCode: WidgetEvCode?.CreatePageCodeWidgetMapping,
+          EvType: WidgetEvType?.Success,
+        })
+      )
+    )
+  }
+
+  @Delete()
+  @UseGuards(AuthGuard('jwt'))
+  deleteMapping(@Body() body: DeletePageWidgetMappingDto, @Req() req: any): Observable<CreatePageWidgetMappingResponseDto> {
+    const tenantCode = req.user?.tenantCode ?? '';
+
+    return this.pageWidgetService.deleteMappingPageWidgetPosition( body, tenantCode).pipe(
+      map((response) =>
+        buildResponse(CreatePageWidgetMappingResponseDto, {
+          Status: WidgetStatus?.Ok,
+          Message: WidgetMessage?.PageWidgetMappingDeleted,
+          EvCode: WidgetEvCode?.DeletePageCodeWidgetMapping,
           EvType: WidgetEvType?.Success,
         })
       )

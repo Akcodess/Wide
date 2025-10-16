@@ -4,12 +4,16 @@ export enum WidgetMessage {
   FailedToParseUserIds = "Failed to parse UserIds for widget:",
   PageWidgetMappingCreated = "Mapping created successfully",
   PageWidgetMappingUpdated = "Mapping updated successfully",
-  PageWidgetMappingCreatedUpdated= "Mapping created/updated successfully."
+  PageWidgetMappingCreatedUpdated= "Mapping created-updated successfully",
+  PageWidgetMappingDeleted = "Mapping deleted successfully",
+  PageWidgetMappingNotFound = "No mapping found to delete",
+  ErrorDeletingMapping = "Error deleting mapping for widget",
 }
 
 export enum WidgetEvCode {
   GetWidgetByPageCode = 'GetWidgetByPageCode',
-    CreatePageCodeWidgetMapping = "CreatePageCodeWidgetMapping"
+    CreatePageCodeWidgetMapping = "CreatePageCodeWidgetMapping",
+    DeletePageCodeWidgetMapping = "DeletePageCodeWidgetMapping"
 }
 
 export enum WidgetEvType {

@@ -1,20 +1,16 @@
 import { Expose, Transform } from 'class-transformer';
-import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from '../constants/widget.pagecode.enums';
 
-export class CreatePageWidgetMappingDto {
-    @IsNumber()
-    @IsNotEmpty()
-    widgetId: number;
-
+export class DeletePageWidgetMappingDto {
     @IsString()
     @IsNotEmpty()
     pageCode: string;
 
-    @IsString()
+    @IsNumber()
     @IsNotEmpty()
-    applicationCode: string;
+    widgetId: number;
 }
 
 export class CreatePageWidgetMappingResponseDto {
@@ -23,7 +19,7 @@ export class CreatePageWidgetMappingResponseDto {
     Status: number;
 
     @Expose()
-    @Transform(({ value }) => value ?? WidgetMessage.RetrievedSuccessfully)
+    @Transform(({ value }) => value ?? WidgetMessage?.PageWidgetMappingDeleted)
     Message: string;
 
     @Expose()
@@ -31,7 +27,7 @@ export class CreatePageWidgetMappingResponseDto {
     TimeStamp: string;
 
     @Expose()
-    @Transform(({ value }) => value ?? WidgetEvCode.GetWidgetByPageCode)
+    @Transform(({ value }) => value ?? WidgetEvCode.DeletePageCodeWidgetMapping)
     EvCode: string;
 
     @Expose()

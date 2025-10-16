@@ -11,7 +11,8 @@ import { UserWidgetPosition } from '../user-widget/user-widget-position.entity';
 import { Setting } from '../setting/setting.entity';
 import { TenantConnectionService } from '../tenant/tenant-connection.service';
 import { WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
-import { CreatePageWidgetMappingDto } from './dto/page-widget-dts';
+import { CreatePageWidgetMappingDto } from './dto/page-widget-create-mapping.dto';
+import { DeletePageWidgetMappingDto } from './dto/page-widget-delete-mapping.dto';
 
 @Injectable()
 export class WidgetPagecodeService {
@@ -111,8 +112,32 @@ export class WidgetPagecodeService {
         }
       }),
       catchError((err) =>
-        throwError(() => new BadRequestException({ Status: WidgetStatus?.InternalServerError, Message: err?.message})),
+        throwError(() => new BadRequestException({ Status: WidgetStatus?.InternalServerError, Message: err?.message })),
       ),
+    );
+  }
+
+  deleteMappingPageWidgetPosition(body: DeletePageWidgetMappingDto, tenantCode: string) {
+    const ensure$ = from(this.ensureRepos(tenantCode));
+    const { pageCode, widgetId } = body;
+
+    return ensure$.pipe(
+      switchMap(() => from(this.pageWidgetRepo.delete({ pageCode: pageCode, widgetId: widgetId }))),
+      tap((result) => {
+        if (result.affected && result.affected > 0) {
+          this.logger.log(WidgetMessage?.PageWidgetMappingDeleted);
+        } else {
+          this.logger.warn(WidgetMessage?.PageWidgetMappingNotFound);
+        }
+      }),
+      map((result) => {
+        if (!result.affected) { throw new NotFoundException({ Status: WidgetStatus?.NotFound, Message: WidgetMessage?.PageWidgetMappingNotFound }); }
+        return result;
+      }),
+      catchError((err) => {
+        this.logger.error(WidgetMessage?.ErrorDeletingMapping);
+        return throwError(() => new BadRequestException({ Status: WidgetStatus?.InternalServerError, Message: err?.message }));
+      })
     );
   }
 }
