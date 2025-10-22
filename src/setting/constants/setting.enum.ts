@@ -1,11 +1,17 @@
 export enum WidgetMessage {
-    PageWidgetMappingDeleted = "Settings fetched successfully",
-    PageWidgetMappingNotFound = "Settings not found",
-    ErrorFetchingSettings = "Error fetching settings"
+    SettingsFetched = "Settings fetched successfully",
+    SettingsNotFound = "Settings not found",
+    SettingCreated = "Setting created successfully",
+    SettingUpdated = "Setting updated successfully",
+    ErrorFetchingSettings = "Error fetching settings",
+    ErrorCreatingSetting = "Error creating setting",
+    ErrorUpdatingSetting = "Error updating setting"
 }
 
-export enum WidgetEvCode {
-    GetSettings = "GetSettings"
+export enum SettingEvCode {
+    GetSettings = "GetSettings",
+    CreateSetting = "CreateSetting",
+    UpdateSetting = "UpdateSetting"
 }
 
 export enum WidgetEvType {

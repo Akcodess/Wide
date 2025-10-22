@@ -8,7 +8,9 @@ import { TenantConnectionService } from '../tenant/tenant-connection.service';
 import { Setting } from './setting.entity';
 import { WidgetService } from '../widget/widget.service';
 import { handleRxError } from '../common/responses/error.response.common';
-import { WidgetEvCode, WidgetMessage } from './constants/setting.enum';
+import { SettingEvCode, WidgetMessage } from './constants/setting.enum';
+import { CreateSettingRequestDto } from './dto/create-setting.dto';
+import { UpdateSettingRequestDto } from './dto/update-setting.dto';
 
 @Injectable()
 export class SettingService {
@@ -32,15 +34,62 @@ export class SettingService {
         return from(this.settingRepo.findOne({ where: queryConditions })).pipe(
           map((setting) => {
             if (!setting) {
-              return handleRxError(new NotFoundException(), WidgetEvCode?.GetSettings, WidgetMessage?.PageWidgetMappingNotFound);
+              return handleRxError(new NotFoundException(), SettingEvCode?.GetSettings, WidgetMessage?.SettingsNotFound);
             }
             return setting;
           }),
           catchError((err) => {
             this.logger.error(WidgetMessage?.ErrorFetchingSettings, err.stack);
-            return handleRxError(err, WidgetEvCode?.GetSettings, WidgetMessage?.ErrorFetchingSettings);
+            return handleRxError(err, SettingEvCode?.GetSettings, WidgetMessage?.ErrorFetchingSettings);
           })
         );
+      })
+    );
+  }
+
+  createSetting(createDto: CreateSettingRequestDto, userId: number, tenantCode: string) {
+    return from(this.ensureRepos(tenantCode)).pipe(
+      switchMap(() => {
+        const newSetting = {
+          applicationCode: createDto.applicationCode,
+          pageCode: createDto.pageCode,
+          settingConfig: createDto.settingConfig,
+          createdBy: userId,
+        };
+
+        return from(this.settingRepo.save(newSetting));
+      }),
+      catchError((err) => {
+        this.logger.error(WidgetMessage?.ErrorCreatingSetting, err.stack);
+        return handleRxError(err, SettingEvCode?.CreateSetting, WidgetMessage?.ErrorCreatingSetting);
+      })
+    );
+  }
+
+  updateSetting(payload: UpdateSettingRequestDto, tenantCode: string, userId: number) {
+    return from(this.ensureRepos(tenantCode)).pipe(
+      switchMap(() => {
+        return from(this.settingRepo.findOne({ where: { id: payload?.id } }));
+      }),
+      switchMap((existingSetting) => {
+        if (!existingSetting) {
+          return handleRxError(new NotFoundException(), SettingEvCode?.UpdateSetting, WidgetMessage?.SettingsNotFound);
+        }
+
+        const updatedPayload = {
+          settingConfig: payload?.settingConfig,
+          editedBy: userId,
+          editedOn: new Date()
+        };
+
+        return from(this.settingRepo.update({ id: payload?.id }, updatedPayload));
+      }),
+      switchMap(() => {
+        return from(this.settingRepo.findOne({ where: { id: payload?.id } }));
+      }),
+      catchError(error => {
+        this.logger.error(`${WidgetMessage?.ErrorUpdatingSetting} ${error.message}`);
+        return handleRxError(error, SettingEvCode?.UpdateSetting, WidgetMessage?.ErrorUpdatingSetting);
       })
     );
   }

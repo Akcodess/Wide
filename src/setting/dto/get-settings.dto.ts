@@ -2,7 +2,7 @@ import { Expose, Transform, Type } from 'class-transformer';
 import { IsNotEmpty, IsString } from 'class-validator';
 import moment from 'moment';
 
-import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from '../constants/setting.enum';
+import { SettingEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from '../constants/setting.enum';
 
 export class GetSettingsRequestDto {
   @IsString()
@@ -28,11 +28,11 @@ export class SettingList {
 
 export class GetSettingsResponseDto {
   @Expose()
-  @Transform(({ value }) => value ?? WidgetStatus.Ok)
+  @Transform(({ value }) => value ?? WidgetStatus?.Ok)
   Status: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? WidgetMessage?.PageWidgetMappingDeleted)
+  @Transform(({ value }) => value ?? WidgetMessage?.SettingsFetched)
   Message: string;
 
   @Expose()
@@ -44,10 +44,10 @@ export class GetSettingsResponseDto {
   SettingList: SettingList[];
 
   @Expose()
-  @Transform(({ value }) => value ?? WidgetEvCode.GetSettings)
+  @Transform(({ value }) => value ?? SettingEvCode?.GetSettings)
   EvCode: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? WidgetEvType.Success)
+  @Transform(({ value }) => value ?? WidgetEvType?.Success)
   EvType: string;
 }
