@@ -3,15 +3,18 @@ export enum WidgetMessage {
     SettingsNotFound = "Settings not found",
     SettingCreated = "Setting created successfully",
     SettingUpdated = "Setting updated successfully",
+    SettingDeleted = "Setting deleted successfully",
     ErrorFetchingSettings = "Error fetching settings",
     ErrorCreatingSetting = "Error creating setting",
-    ErrorUpdatingSetting = "Error updating setting"
+    ErrorUpdatingSetting = "Error updating setting",
+    ErrorDeletingSetting = "Error deleting setting"
 }
 
 export enum SettingEvCode {
     GetSettings = "GetSettings",
     CreateSetting = "CreateSetting",
-    UpdateSetting = "UpdateSetting"
+    UpdateSetting = "UpdateSetting",
+    DeleteSetting = "DeleteSetting"
 }
 
 export enum WidgetEvType {

@@ -93,4 +93,22 @@ export class SettingService {
       })
     );
   }
+
+  deleteSetting(param : any, tenantCode: string) {
+    const parsedId = parseInt(param?.id);
+
+    return from(this.ensureRepos(tenantCode)).pipe(
+      switchMap(() => this.settingRepo.findOne({ where: { id: parsedId } })),
+      switchMap(existingSetting => {
+        if (!existingSetting) {
+          return handleRxError(new NotFoundException(), SettingEvCode?.DeleteSetting, WidgetMessage?.SettingsNotFound);
+        }
+        return from(this.settingRepo.delete({ id: parsedId }));
+      }),
+      catchError(error => {
+        this.logger.error(`${WidgetMessage?.ErrorDeletingSetting} ${error.message}`);
+        return handleRxError(error, SettingEvCode?.DeleteSetting, WidgetMessage?.ErrorDeletingSetting);
+      })
+    );
+  }
 }
