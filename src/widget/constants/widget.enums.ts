@@ -40,7 +40,9 @@ export enum WidgetEvCode {
   UpdateWidgetLayout = 'UpdateWidgetLayout',
   DeleteWidget = 'DeleteWidget',
   GetWidgetByCode = 'GetWidgetByCode',
-  UpdateWidgetMapping = "UpdateWidgetMapping"
+  CreateWidgetMapping = "CreateWidgetMapping",
+  UpdateWidgetMapping = "UpdateWidgetMapping",
+  DeleteWidgetUserMapping = "DeleteWidgetUserMapping",
 }
 
 export enum WidgetStatus {

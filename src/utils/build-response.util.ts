@@ -12,9 +12,11 @@ export function buildResponse<T>(dtoClass: new (...args: any[]) => T, options: B
         EvCode: options.EvCode ?? null,
         EvType: options.EvType ?? null,
         TimeStamp: options.TimeStamp ?? timestamp,
-        ...(options.data ? { data: options.data } : {}),
+        ...(options.Data ? { Data: options.Data } : {}),
         ...(options.Widget ? { Widget: options.Widget } : {}),
         ...(options.WidgetList ? { WidgetList: options.WidgetList } : {}),
         ...(options.Widgets ? { Widgets: options.Widgets } : {}),
+        ...(options.SettingList ? { SettingList: options.SettingList } : {}),
+        ...(options.Setting ? { Setting: options.Setting } : {}),
     });
 }

@@ -6,9 +6,6 @@ import { GetWidgetByPageCodeRequestDto } from './dto/get-widget-by-pagecode.requ
 import { WidgetService } from '../widget/widget.service';
 import { Widget } from '../widget/widget.entity';
 import { PageWidget } from '../widget-pagecode/page-widget.entity';
-import { PageWidgetPosition } from '../widget-positioning/page-widget-position.entity';
-import { UserWidgetPosition } from '../user-widget/user-widget-position.entity';
-import { Setting } from '../setting/setting.entity';
 import { TenantConnectionService } from '../tenant/tenant-connection.service';
 import { WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
 import { CreatePageWidgetMappingDto } from './dto/page-widget-create-mapping.dto';
@@ -19,18 +16,12 @@ export class WidgetPagecodeService {
   private readonly logger = new Logger(WidgetService.name);
   private widgetRepo!: Repository<Widget>;
   private pageWidgetRepo!: Repository<PageWidget>;
-  private pageWidgetPositionRepo!: Repository<PageWidgetPosition>;
-  private userWidgetPositionRepo!: Repository<UserWidgetPosition>;
-  private settingRepo!: Repository<Setting>;
 
   constructor(private readonly tenantConn: TenantConnectionService) { }
 
   private async ensureRepos(tenantCode: string): Promise<void> {
     this.widgetRepo = await this.tenantConn.getRepository(Widget, tenantCode);
     this.pageWidgetRepo = await this.tenantConn.getRepository(PageWidget, tenantCode);
-    this.pageWidgetPositionRepo = await this.tenantConn.getRepository(PageWidgetPosition, tenantCode);
-    this.userWidgetPositionRepo = await this.tenantConn.getRepository(UserWidgetPosition, tenantCode);
-    this.settingRepo = await this.tenantConn.getRepository(Setting, tenantCode);
   }
 
   private fetchWidgets(query: GetWidgetByPageCodeRequestDto) {

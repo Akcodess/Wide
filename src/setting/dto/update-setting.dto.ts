@@ -1,5 +1,5 @@
 import { Expose, Transform } from 'class-transformer';
-import { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber } from 'class-validator';
 import { SettingEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from '../constants/setting.enum';
 import moment from 'moment';
 

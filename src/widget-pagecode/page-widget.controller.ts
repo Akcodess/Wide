@@ -5,8 +5,9 @@ import { CreatePageWidgetMappingDto, CreatePageWidgetMappingResponseDto } from '
 import { WidgetPagecodeService } from './widget-pagecode.service';
 import { map, Observable } from 'rxjs';
 import { buildResponse } from '../utils/build-response.util';
-import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
+import { WidgetEvCode, WidgetMessage } from './constants/widget.pagecode.enums';
 import { DeletePageWidgetMappingDto } from './dto/page-widget-delete-mapping.dto';
+import { handleRxSuccess } from '../common/responses/success.response.common';
 
 @Controller('wide-api/page-widget')
 @UseGuards(AuthGuard('jwt'))
@@ -20,14 +21,7 @@ export class PageWidgetController {
     const userId = req.user?.userId ?? '';
 
     return this.pageWidgetService.createMappingPageWidgetPosition(body, tenantCode, userId).pipe(
-      map((response) =>
-        buildResponse(CreatePageWidgetMappingResponseDto, {
-          Status: WidgetStatus?.Ok,
-          Message: WidgetMessage?.PageWidgetMappingCreatedUpdated,
-          EvCode: WidgetEvCode?.CreatePageCodeWidgetMapping,
-          EvType: WidgetEvType?.Success,
-        })
-      )
+      map((response) => buildResponse(CreatePageWidgetMappingResponseDto, handleRxSuccess(response, WidgetEvCode?.CreatePageCodeWidgetMapping, WidgetMessage?.PageWidgetMappingCreated)))
     )
   }
 
@@ -38,12 +32,7 @@ export class PageWidgetController {
 
     return this.pageWidgetService.deleteMappingPageWidgetPosition( body, tenantCode).pipe(
       map((response) =>
-        buildResponse(CreatePageWidgetMappingResponseDto, {
-          Status: WidgetStatus?.Ok,
-          Message: WidgetMessage?.PageWidgetMappingDeleted,
-          EvCode: WidgetEvCode?.DeletePageCodeWidgetMapping,
-          EvType: WidgetEvType?.Success,
-        })
+        buildResponse(CreatePageWidgetMappingResponseDto, handleRxSuccess(response, WidgetEvCode?.DeletePageCodeWidgetMapping, WidgetMessage?.PageWidgetMappingDeleted))
       )
     )
   }

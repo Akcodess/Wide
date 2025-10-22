@@ -6,7 +6,7 @@ import { GetSettingsRequestDto, GetSettingsResponseDto } from './dto/get-setting
 import { SettingService } from './setting.service';
 import { buildResponse } from '../utils/build-response.util';
 import { handleRxSuccess } from '../common/responses/success.response.common';
-import { SettingEvCode, WidgetMessage } from './constants/setting.enum';
+import { SettingEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from './constants/setting.enum';
 import { CreateSettingRequestDto, CreateSettingsResponseDto } from './dto/create-setting.dto';
 import { UpdateSettingRequestDto, UpdateSettingsResponseDto } from './dto/update-setting.dto';
 import { DeleteSettingResponseDto } from './dto/delete-setting.dto';
@@ -21,7 +21,13 @@ export class SettingController {
         const tenantCode = req.user?.tenantCode ?? '';
 
         return this.settingService?.getSettings(query, tenantCode).pipe(
-            map((widgets: any) => buildResponse(GetSettingsResponseDto, handleRxSuccess(widgets, SettingEvCode?.GetSettings, WidgetMessage?.SettingsFetched)))
+            map((widgets: any) => buildResponse(GetSettingsResponseDto, {
+                Status: WidgetStatus?.Ok,
+                Message: WidgetMessage?.SettingsFetched,
+                EvCode: SettingEvCode?.GetSettings,
+                EvType: WidgetEvType.Success,
+                SettingList:  widgets
+            }))
         );
     }
 
@@ -29,7 +35,13 @@ export class SettingController {
     @UseGuards(AuthGuard('jwt'))
     createSetting(@Body(new ValidationPipe({ transform: true })) createDto: CreateSettingRequestDto, @Req() req: any): Observable<CreateSettingsResponseDto> {
         return this.settingService?.createSetting(createDto, req.user?.userId ?? '', req.user?.tenantCode ?? '').pipe(
-            map(result => buildResponse(CreateSettingsResponseDto, handleRxSuccess(result, SettingEvCode?.CreateSetting, WidgetMessage?.SettingCreated)))
+            map(result => buildResponse(CreateSettingsResponseDto, {
+                Status: WidgetStatus?.Ok,
+                Message: WidgetMessage?.SettingCreated,
+                EvCode: SettingEvCode?.CreateSetting,
+                EvType: WidgetEvType.Success,
+                Setting: result
+            }))
         );
     }
 
@@ -37,7 +49,12 @@ export class SettingController {
     @UseGuards(AuthGuard('jwt'))
     updateSetting(@Body(new ValidationPipe({ transform: true })) updateDto: UpdateSettingRequestDto, @Req() req: any): Observable<UpdateSettingsResponseDto> {
         return this.settingService?.updateSetting(updateDto, req.user?.tenantCode ?? '', req.user.userId).pipe(
-            map(result => buildResponse(UpdateSettingsResponseDto, handleRxSuccess(result, SettingEvCode?.UpdateSetting, WidgetMessage?.SettingUpdated)))
+            map(result => buildResponse(UpdateSettingsResponseDto, {
+                Status: WidgetStatus?.Ok,
+                Message: WidgetMessage?.SettingUpdated,
+                EvCode: SettingEvCode?.UpdateSetting,
+                EvType: WidgetEvType.Success
+            }))
         );
     }
 
@@ -45,7 +62,12 @@ export class SettingController {
     @UseGuards(AuthGuard('jwt'))
     deleteSetting(@Param('id', ParseIntPipe) id: number, @Req() req: any): Observable<DeleteSettingResponseDto> {
         return this.settingService?.deleteSetting({ id }, req.user?.tenantCode ?? '').pipe(
-            map(result => buildResponse(DeleteSettingResponseDto, handleRxSuccess(result, SettingEvCode?.DeleteSetting, WidgetMessage?.SettingDeleted)))
+            map(result => buildResponse(DeleteSettingResponseDto, {
+                Status: WidgetStatus?.Ok,
+                Message: WidgetMessage?.SettingDeleted,
+                EvCode: SettingEvCode?.DeleteSetting,
+                EvType: WidgetEvType.Success
+            }))
         );
     }
 }

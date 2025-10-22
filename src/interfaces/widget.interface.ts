@@ -3,9 +3,11 @@ export interface BaseResponseOptions<T = any> {
     Message: string;
     EvCode?: string;
     EvType?: string;
-    data?: T;
+    Data?: T;
     Widget?: T;
     WidgetList?: T;
     Widgets?: T;
     TimeStamp?: string;
+    SettingList?: T;
+    Setting?: T;
 }

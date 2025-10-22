@@ -5,8 +5,9 @@ import { from, map, Observable } from 'rxjs';
 import { GetWidgetByPageCodeResponseDto } from './dto/get-widget-by-pagecode.response.dto';
 import { WidgetPagecodeService } from './widget-pagecode.service'
 import { GetWidgetByPageCodeRequestDto } from './dto/get-widget-by-pagecode.request.dto';
-import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
+import { WidgetEvCode, WidgetMessage } from './constants/widget.pagecode.enums';
 import { buildResponse } from '../utils/build-response.util';
+import { handleRxSuccess } from '../common/responses/success.response.common';
 
 @Controller('wide-api/widget-pagecode')
 export class WidgetPagecodeController {
@@ -18,13 +19,7 @@ export class WidgetPagecodeController {
     const tenantCode = req.user?.tenantCode ?? '';
 
     return from(this.widgetPagecodeService.getWidgetsByPageCode(query, tenantCode)).pipe(
-      map((widgets) => buildResponse(GetWidgetByPageCodeResponseDto, {
-        Status: WidgetStatus.Ok,
-        Message: WidgetMessage.RetrievedSuccessfully,
-        EvCode: WidgetEvCode.GetWidgetByPageCode,
-        EvType: WidgetEvType.Success,
-        Widgets: widgets,
-      }))
+      map((widgets) => buildResponse(GetWidgetByPageCodeResponseDto, handleRxSuccess(widgets, WidgetEvCode?.GetWidgetByPageCode, WidgetMessage?.RetrievedSuccessfully)))
     );
   }
 }

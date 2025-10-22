@@ -86,7 +86,7 @@ export class WidgetController {
           Message: WidgetMessage.AddedSuccessfully,
           EvCode: WidgetEvCode.AddWidget,
           EvType: WidgetEvType.Success,
-          data: { widgetId }
+          Data: { widgetId }
         }),
       ),
     );
@@ -104,7 +104,7 @@ export class WidgetController {
           Message: items.length ? WidgetMessage.RetrievedSuccessfully : WidgetMessage.NoWidgetsFound,
           EvType: items.length ? WidgetEvType.Success : WidgetEvType.Failed,
           EvCode: WidgetEvCode.GetWidget,
-          data: { WidgetList: items },
+          WidgetList: items
         }),
       ),
     );
