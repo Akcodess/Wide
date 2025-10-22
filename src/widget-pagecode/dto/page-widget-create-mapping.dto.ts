@@ -2,6 +2,7 @@ import { Expose, Transform } from 'class-transformer';
 import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
 
 import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from '../constants/widget.pagecode.enums';
+import moment from 'moment';
 
 export class CreatePageWidgetMappingDto {
     @IsNumber()
@@ -27,7 +28,7 @@ export class CreatePageWidgetMappingResponseDto {
     Message: string;
 
     @Expose()
-    @Transform(({ value }) => value ?? new Date().toISOString().replace('T', ' ').substring(0, 19))
+    @Transform(({ value }) => value ?? moment().format('YYYY-MM-DD HH:mm:ss'))
     TimeStamp: string;
 
     @Expose()

@@ -1,5 +1,6 @@
 import { Expose, Transform, Type } from 'class-transformer';
 import { WidgetEvCode, WidgetEvType, WidgetStatus, WidgetMessage } from '../constants/widget.pagecode.enums';
+import moment from 'moment';
 
 export class WidgetItemDto {
   @Expose() WidgetId: number;
@@ -28,7 +29,7 @@ export class GetWidgetByPageCodeResponseDto {
   Message: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? new Date().toISOString().replace('T', ' ').substring(0, 19))
+  @Transform(({ value }) => value ?? moment().format('YYYY-MM-DD HH:mm:ss'))
   TimeStamp: string;
 
   @Expose()

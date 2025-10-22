@@ -1,5 +1,6 @@
 import { Expose, Transform, Type } from 'class-transformer';
 import { WidgetMessage, WidgetStatus, WidgetEvType, WidgetEvCode } from '../constants/widget.enums';
+import moment from 'moment';
 
 export class WidgetItemDto {
   @Expose() Id: number;
@@ -29,7 +30,7 @@ export class GetWidgetsResponseDto {
   Message: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? new Date().toISOString().replace('T', ' ').substring(0, 19))
+  @Transform(({ value }) => value ?? moment().format('YYYY-MM-DD HH:mm:ss'))
   TimeStamp: string;
 
   @Expose()

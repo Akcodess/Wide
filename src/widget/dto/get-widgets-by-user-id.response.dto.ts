@@ -1,4 +1,6 @@
 import { Expose, Transform, Type } from 'class-transformer';
+import moment from 'moment';
+
 import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from '../constants/widget.enums';
 
 export class WidgetByUserIdDto {
@@ -43,7 +45,7 @@ export class GetWidgetsByUserIdResponseDto  {
     Message: string;
   
     @Expose()
-    @Transform(({ value }) => value ?? new Date().toISOString().replace('T', ' ').substring(0, 19))
+    @Transform(({ value }) => value ?? moment().format('YYYY-MM-DD HH:mm:ss'))
     TimeStamp: string;
   
     @Expose()
