@@ -11,3 +11,11 @@ export interface BaseResponseOptions<T = any> {
     SettingList?: T;
     Setting?: T;
 }
+
+export interface SuccessResponse<T = unknown> {
+    Status: number;
+    Message: string;
+    EvCode: string;
+    EvType: 'Success' | 'Failed';
+    Data?: T;
+}
