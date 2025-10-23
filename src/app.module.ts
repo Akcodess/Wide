@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+
 import { AuthModule } from './auth/auth.module';
 import { SettingModule } from './setting/setting.module';
 import { UserWidgetModule } from './user-widget/user-widget.module';
@@ -16,13 +17,7 @@ import { TenantModule } from './tenant/tenant.module';
         envFilePath: '.env',
       }
     ),
-    TenantModule,
-    AuthModule,
-    SettingModule,
-    UserWidgetModule,
-    WidgetPagecodeModule,
-    WidgetPositioningModule,
-    WidgetModule,
+    TenantModule, AuthModule, SettingModule, UserWidgetModule, WidgetPagecodeModule, WidgetPositioningModule, WidgetModule,
   ]
 })
-export class AppModule {}
+export class AppModule { }
