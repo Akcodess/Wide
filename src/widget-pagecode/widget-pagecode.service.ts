@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { catchError, from, map, switchMap, tap, throwError } from 'rxjs';
+import { catchError, from, map, switchMap, tap } from 'rxjs';
 import { Repository } from 'typeorm';
 
 import { GetWidgetByPageCodeRequestDto } from './dto/get-widget-by-pagecode.request.dto';
@@ -7,10 +7,10 @@ import { WidgetService } from '../widget/widget.service';
 import { Widget } from '../widget/widget.entity';
 import { PageWidget } from '../widget-pagecode/page-widget.entity';
 import { TenantConnectionService } from '../tenant/tenant-connection.service';
-import { WidgetEvCode, WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
+import { WidgetEvCode, WidgetMessage } from './constants/widget.pagecode.enums';
 import { CreatePageWidgetMappingDto } from './dto/page-widget-create-mapping.dto';
 import { DeletePageWidgetMappingDto } from './dto/page-widget-delete-mapping.dto';
-import { handleRxError } from 'src/common/responses/error.response.common';
+import { handleRxError } from '../common/responses/error.response.common';
 
 @Injectable()
 export class WidgetPagecodeService {
