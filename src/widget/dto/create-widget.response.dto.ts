@@ -1,6 +1,7 @@
 import { Expose, Transform } from 'class-transformer';
+import moment from 'moment'; 
+
 import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from '../constants/widget.enums';
-import moment from 'moment';
 
 export class CreateWidgetResponseDto {
   @Expose()

@@ -1,8 +1,8 @@
 import { Expose, Transform } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import moment from 'moment';
 
 import { WidgetPositioningEvCode, WidgetPositioningEvType, WidgetPositioningMessage, WidgetPositioningStatus } from '../constants/widget-positioning.enum';
-import moment from 'moment';
 
 export class DeleteWidgetPositionRequestDto {
     @IsNotEmpty()

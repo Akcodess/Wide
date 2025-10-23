@@ -5,7 +5,7 @@ import { map, Observable } from 'rxjs';
 import { WidgetService } from './widget.service';
 import { GetWidgetsQueryDto } from './dto/get-widgets.query.dto';
 import { GetWidgetsResponseDto } from './dto/get-widgets.response.dto';
-import { WidgetEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from './constants/widget.enums';
+import { WidgetEvCode, WidgetMessage } from './constants/widget.enums';
 import { CreateWidgetRequestDto } from './dto/create-widget.request.dto';
 import { CreateWidgetResponseDto } from './dto/create-widget.response.dto';
 import { WidgetItemDto } from './dto/get-widgets.response.dto';
