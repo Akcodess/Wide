@@ -7,9 +7,10 @@ import { WidgetService } from '../widget/widget.service';
 import { Widget } from '../widget/widget.entity';
 import { PageWidget } from '../widget-pagecode/page-widget.entity';
 import { TenantConnectionService } from '../tenant/tenant-connection.service';
-import { WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
+import { WidgetEvCode, WidgetMessage, WidgetStatus } from './constants/widget.pagecode.enums';
 import { CreatePageWidgetMappingDto } from './dto/page-widget-create-mapping.dto';
 import { DeletePageWidgetMappingDto } from './dto/page-widget-delete-mapping.dto';
+import { handleRxError } from 'src/common/responses/error.response.common';
 
 @Injectable()
 export class WidgetPagecodeService {
@@ -64,7 +65,7 @@ export class WidgetPagecodeService {
       switchMap((widgets) => {
         if (!widgets) {
           this.logger.warn(WidgetMessage?.NoWidgetsFound);
-          return throwError(() => new NotFoundException({ Message: WidgetMessage?.NoWidgetsFound, Status: WidgetStatus?.NotFound }));
+          return handleRxError(new NotFoundException(), WidgetEvCode?.GetWidgetByPageCode, WidgetMessage?.NoWidgetsFound);
         }
 
         this.logger.log(WidgetMessage?.RetrievedSuccessfully);
@@ -78,12 +79,7 @@ export class WidgetPagecodeService {
     const { pageCode, widgetId, applicationCode } = body;
 
     return ensure$.pipe(
-      switchMap(() =>
-        from(this.pageWidgetRepo.findOne({
-          where: { pageCode: pageCode, widgetId: widgetId },
-        }),
-        ),
-      ),
+      switchMap(() => from(this.pageWidgetRepo.findOne({ where: { pageCode: pageCode, widgetId: widgetId } }))),
       switchMap((existingMapping) => {
         if (!existingMapping) {
           const pageWidget: any = {
@@ -102,9 +98,7 @@ export class WidgetPagecodeService {
             );
         }
       }),
-      catchError((err) =>
-        throwError(() => new BadRequestException({ Status: WidgetStatus?.InternalServerError, Message: err?.message })),
-      ),
+      catchError((err) => { return handleRxError(new BadRequestException(), WidgetEvCode.CreatePageCodeWidgetMapping, err?.message) }),
     );
   }
 
@@ -122,12 +116,12 @@ export class WidgetPagecodeService {
         }
       }),
       map((result) => {
-        if (!result.affected) { throw new NotFoundException({ Status: WidgetStatus?.NotFound, Message: WidgetMessage?.PageWidgetMappingNotFound }); }
+        if (!result.affected) { return handleRxError(new NotFoundException(), WidgetEvCode.DeletePageCodeWidgetMapping, WidgetMessage?.PageWidgetMappingNotFound); }
         return result;
       }),
       catchError((err) => {
         this.logger.error(WidgetMessage?.ErrorDeletingMapping);
-        return throwError(() => new BadRequestException({ Status: WidgetStatus?.InternalServerError, Message: err?.message }));
+        return handleRxError(new BadRequestException(), WidgetEvCode.DeletePageCodeWidgetMapping, err?.message);
       })
     );
   }
