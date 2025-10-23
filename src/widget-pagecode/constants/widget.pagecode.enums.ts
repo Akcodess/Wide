@@ -2,7 +2,7 @@ export enum WidgetMessage {
   RetrievedSuccessfully = "Widgets found successfully by ApplicationCode and PageCode",
   NoWidgetsFound = "No widgets found for the given ApplicationCode and PageCode",
   FailedToParseUserIds = "Failed to parse UserIds for widget:",
-  PageWidgetMappingCreated = "Mapping created successfully",
+  PageWidgetMappingCreated = "Mapping created-updated successfully",
   PageWidgetMappingUpdated = "Mapping updated successfully",
   PageWidgetMappingCreatedUpdated= "Mapping created-updated successfully",
   PageWidgetMappingDeleted = "Mapping deleted successfully",

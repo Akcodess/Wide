@@ -26,6 +26,8 @@ export enum WidgetMessage {
   ErrorFetchingWidgets = "Error fetching widgets for user",
   WidgetMappingCreated ="Widget mapping created successfully",
   ErrorUpdatingMapping = "Error updating widget mapping",
+  WidgetMappingDeleted = "UserId(s) removed from widget mapping successfully!",
+  UserIdNotFound = "UserId(s) not found in widget mapping!",
 }
 
 export enum WidgetEvType {

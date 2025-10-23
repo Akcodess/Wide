@@ -20,6 +20,7 @@ import { GetWidgetsByUserIdResponseDto } from './dto/get-widgets-by-user-id.resp
 import { CreateWidgetMappingDto } from './dto/widget-mapping.request.dto';
 import { CreateWidgetMappingResponseDto } from './dto/create-widget-mapping.response.dto';
 import { DeleteWidgetUserMappingResponseDto } from './dto/delete-widget-mapping.response';
+import { handleRxSuccess } from '../common/responses/success.response.common';
 
 @Controller(`${process.env.WIDE_PRIFIX}/widget`)
 export class WidgetController {
@@ -31,12 +32,7 @@ export class WidgetController {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.createWidgetMapping(body, tenantCode).pipe(
       map(() =>
-        buildResponse(CreateWidgetMappingResponseDto, {
-          Status: WidgetStatus.Ok,
-          Message: WidgetMessage.WidgetMappingCreated,
-          EvCode: WidgetEvCode.UpdateWidgetMapping,
-          EvType: WidgetEvType.Success,
-        }),
+        buildResponse(CreateWidgetMappingResponseDto, handleRxSuccess(null, WidgetEvCode.UpdateWidgetMapping, WidgetMessage.WidgetMappingCreated)),
       ),
     )
   }
@@ -47,12 +43,7 @@ export class WidgetController {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.deleteWidgetUserMapping(body, tenantCode).pipe(
       map(() =>
-        buildResponse(DeleteWidgetUserMappingResponseDto, {
-          Status: WidgetStatus.Ok,
-          Message: `${body?.userId} UserId(s) removed from widget mapping successfully!`,
-          EvCode: WidgetEvCode.UpdateWidgetMapping,
-          EvType: WidgetEvType.Success,
-        }),
+        buildResponse(DeleteWidgetUserMappingResponseDto, handleRxSuccess(null, WidgetEvCode.UpdateWidgetMapping, `${body?.userId} ${WidgetMessage.WidgetMappingDeleted}`)),
       ),
     );
   }
@@ -62,15 +53,7 @@ export class WidgetController {
   getWidgetsByUserId(@Query() query: GetWidgetsByUserIdDto, @Req() req: any): Observable<GetWidgetsByUserIdResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.getWidgetsByUserId(query, tenantCode).pipe(
-      map((widgets) =>
-        buildResponse(GetWidgetsByUserIdResponseDto, {
-          Status: WidgetStatus.Ok,
-          Message: WidgetMessage.RetrievedSuccessfully,
-          WidgetList: widgets,
-          EvType: WidgetEvType.Success,
-          EvCode: WidgetEvCode.GetWidget,
-        }),
-      ),
+      map((widgets) => buildResponse(GetWidgetsByUserIdResponseDto, handleRxSuccess(widgets, WidgetEvCode.GetWidget, WidgetMessage.RetrievedSuccessfully))),
     );
   }
 
@@ -81,13 +64,7 @@ export class WidgetController {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.createWidget(body, userId, tenantCode).pipe(
       map(({ widgetId }) =>
-        buildResponse(CreateWidgetResponseDto, {
-          Status: WidgetStatus.Ok,
-          Message: WidgetMessage.AddedSuccessfully,
-          EvCode: WidgetEvCode.AddWidget,
-          EvType: WidgetEvType.Success,
-          Data: { widgetId }
-        }),
+        buildResponse(CreateWidgetResponseDto, handleRxSuccess({ widgetId }, WidgetEvCode.AddWidget, WidgetMessage.AddedSuccessfully)),
       ),
     );
   }
@@ -99,13 +76,7 @@ export class WidgetController {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.getWidgets(query, userId, tenantCode).pipe(
       map((items: WidgetItemDto[]) =>
-        buildResponse(GetWidgetsResponseDto, {
-          Status: items.length ? WidgetStatus.Ok : WidgetStatus.NotFound,
-          Message: items.length ? WidgetMessage.RetrievedSuccessfully : WidgetMessage.NoWidgetsFound,
-          EvType: items.length ? WidgetEvType.Success : WidgetEvType.Failed,
-          EvCode: WidgetEvCode.GetWidget,
-          WidgetList: items
-        }),
+        buildResponse(GetWidgetsResponseDto, handleRxSuccess(items, WidgetEvCode.GetWidget, items.length ? WidgetMessage.RetrievedSuccessfully : WidgetMessage.NoWidgetsFound)),
       ),
     );
   }
@@ -116,12 +87,7 @@ export class WidgetController {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.updateWidget(id, body, tenantCode, req.user?.userId ?? '').pipe(
       map(() =>
-        buildResponse(UpdateWidgetResponseDto, {
-          Status: WidgetStatus.Ok,
-          Message: WidgetMessage.WidgetUpdated,
-          EvCode: WidgetEvCode.UpdateWidget,
-          EvType: WidgetEvType.Success,
-        }),
+        buildResponse(UpdateWidgetResponseDto, handleRxSuccess(null, WidgetEvCode.UpdateWidget, WidgetMessage.WidgetUpdated)),
       ),
     );
   }
@@ -132,12 +98,7 @@ export class WidgetController {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.updateWidgetLayout(body, tenantCode, req.user?.userId ?? '').pipe(
       map(() =>
-        buildResponse(UpdateWidgetResponseDto, {
-          Status: WidgetStatus.Ok,
-          Message: WidgetMessage.WidgetLayoutUpdated,
-          EvCode: WidgetEvCode.UpdateWidgetLayout,
-          EvType: WidgetEvType.Success,
-        }),
+        buildResponse(UpdateWidgetResponseDto, handleRxSuccess(null, WidgetEvCode.UpdateWidgetLayout, WidgetMessage.WidgetLayoutUpdated)),
       ),
     );
   }
@@ -148,14 +109,9 @@ export class WidgetController {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.deleteWidget(id, tenantCode).pipe(
       map(() =>
-        buildResponse(UpdateWidgetResponseDto, {
-          Status: WidgetStatus.Ok,
-          Message: WidgetMessage.WidgetDeleted,
-          EvCode: WidgetEvCode.DeleteWidget,
-          EvType: WidgetEvType.Success,
-        }),
+        buildResponse(UpdateWidgetResponseDto, handleRxSuccess(null, WidgetEvCode.DeleteWidget, WidgetMessage.WidgetDeleted)),
       ),
-    );
+    )
   }
 
   @Get(':code')
@@ -165,13 +121,7 @@ export class WidgetController {
 
     return this.widgetService.getWidgetByWidgetCode(params?.code, tenantCode).pipe(
       map((widget) =>
-        buildResponse(GetWidgetByCodeResponseDto, {
-          Status: WidgetStatus.Ok,
-          Message: WidgetMessage.WidgetFoundByCode,
-          EvCode: WidgetEvCode.GetWidgetByCode,
-          EvType: WidgetEvType.Success,
-          Widget: widget,
-        }),
+        buildResponse(GetWidgetByCodeResponseDto, handleRxSuccess(widget, WidgetEvCode.GetWidgetByCode, WidgetMessage.WidgetFoundByCode)),
       ),
     );
   }

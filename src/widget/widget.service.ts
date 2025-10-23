@@ -11,10 +11,11 @@ import { TenantConnectionService } from '../tenant/tenant-connection.service';
 import { CreateWidgetRequestDto } from './dto/create-widget.request.dto';
 import { WidgetItemDto } from './dto/get-widgets.response.dto';
 import { GetWidgetsQueryDto } from './dto/get-widgets.query.dto';
-import { WidgetMessage, WidgetStatus } from './constants/widget.enums';
+import { WidgetEvCode, WidgetMessage, WidgetStatus } from './constants/widget.enums';
 import { UpdateWidgetDto } from './dto/update-widget.request.dto';
 import { GetWidgetsByUserIdDto } from './dto/get-widgets-by-user-id.request.dto';
 import { CreateWidgetMappingDto } from './dto/widget-mapping.request.dto';
+import { handleRxError } from '../common/responses/error.response.common';
 
 @Injectable()
 export class WidgetService {
@@ -115,6 +116,7 @@ export class WidgetService {
         UserIds: safeUserIds
       } as WidgetItemDto;
     } catch (error) {
+      this.logger.error(error);
       throw new BadRequestException({ Message: WidgetMessage?.InvalidWidgetConfig, Status: WidgetStatus.BadRequest });
     }
   }
@@ -293,7 +295,7 @@ export class WidgetService {
       switchMap((widgets) => {
         if (!widgets.length) {
           this.logger.warn(WidgetMessage?.NoWidgetsFound);
-          return throwError(() => new NotFoundException({ Message: WidgetMessage?.NoWidgetsFound, Status: WidgetStatus.NotFound }));
+          return handleRxError(new NotFoundException(), WidgetEvCode?.GetWidget, WidgetMessage?.NoWidgetsFound);
         }
         return this.isAgentSpecific(applicationCode, pageCode).pipe(
           switchMap((agentSpecific) =>
@@ -320,16 +322,14 @@ export class WidgetService {
       switchMap((existingWidget) => {
         if (!existingWidget) {
           this.logger.warn(`${WidgetMessage?.UpdateWidgetNotFound} ${id}`);
-          return throwError(() => new NotFoundException({ Message: WidgetMessage?.WidgetNotFound, Status: WidgetStatus.NotFound }));
+          return handleRxError(new NotFoundException(), WidgetEvCode?.UpdateWidget, WidgetMessage?.WidgetNotFound);
         }
 
         return this.pascalToCamel$((updateDto as any)?.data ?? {}).pipe(
           map((camelData) => ({ ...camelData, editedBy: Number(userId) })),
           switchMap((camelData) =>
             from(this.widgetRepo.save(this.widgetRepo.merge(existingWidget, camelData))).pipe(
-              catchError((err) =>
-                throwError(() => new BadRequestException({ Message: err?.message, Status: WidgetStatus.BadRequest })),
-              ),
+              catchError((err) => { return handleRxError(err, WidgetEvCode.UpdateWidget, err?.message) }),
             ),
           ),
         );
@@ -347,13 +347,13 @@ export class WidgetService {
         const payload = Array.isArray(updateDto) ? updateDto : [];
         if (!payload.length) {
           this.logger.warn(WidgetMessage?.ErrorUpdating);
-          return throwError(() => new BadRequestException({ Message: WidgetMessage?.InvalidPayload, Status: WidgetStatus.BadRequest }));
+          return handleRxError(new BadRequestException(), WidgetEvCode?.UpdateWidgetLayout, WidgetMessage?.InvalidPayload);
         }
         return forkJoin(this.buildWidgetLayoutUpdate$(payload, userId));
       }),
       tap(() => this.logger.log(WidgetMessage?.WidgetLayoutUpdated)),
       map(() => ({ WidgetId: null })),
-      catchError((err) => throwError(() => new BadRequestException({ Message: err?.message, Status: WidgetStatus.BadRequest }))),
+      catchError((err) => { return handleRxError(new BadRequestException(), WidgetEvCode?.UpdateWidgetLayout, err?.message) }),
     );
   }
 
@@ -367,13 +367,12 @@ export class WidgetService {
       }),
       switchMap((widget) => {
         if (!widget) {
-          return throwError(() => new NotFoundException({ Message: WidgetMessage.WidgetCodeNotFound, Status: WidgetStatus.NotFound }),
-          );
+          return handleRxError(new NotFoundException(), WidgetEvCode.GetWidgetByCode, WidgetMessage.WidgetCodeNotFound);
         }
         return of(widget);
       }),
       tap(() => this.logger.log(`${WidgetMessage?.WidgetFoundWithCode} ${code}`)),
-      catchError((err) => throwError(() => new BadRequestException({ Message: err?.message ?? WidgetMessage.ErrorUpdating, Status: WidgetStatus.BadRequest })))
+      catchError((err) => { return handleRxError(new BadRequestException(), WidgetEvCode.GetWidgetByCode, err?.message) })
     );
   }
 
@@ -382,7 +381,7 @@ export class WidgetService {
     return ensure$.pipe(
       switchMap(() => {
         if (Number.isNaN(Number(id))) {
-          return throwError(() => new BadRequestException({ Message: WidgetMessage.InvalidUserId, Status: WidgetStatus.BadRequest }));
+          return handleRxError(new BadRequestException(), WidgetEvCode.DeleteWidget, WidgetMessage?.InvalidUserId);
         }
         const deleteRelations$ = forkJoin([
           defer(() => this.pageWidgetRepo.delete({ widgetId: Number(id) } as any)),
@@ -393,7 +392,7 @@ export class WidgetService {
           switchMap(() => defer(() => this.widgetRepo.delete({ id: Number(id) } as any))),
           switchMap((result) => {
             if (!result?.affected) {
-              return throwError(() => new NotFoundException({ Message: WidgetMessage.DeleteNotAllowed, Status: WidgetStatus.NotFound }));
+              return handleRxError(new NotFoundException(), WidgetEvCode.DeleteWidget, WidgetMessage?.DeleteNotAllowed);
             }
             return of({ ok: true });
           }),
@@ -401,7 +400,7 @@ export class WidgetService {
       }),
       tap(() => this.logger.log(WidgetMessage.WidgetDeleted)),
       map(() => ({ WidgetId: Number(id) })),
-      catchError((err) => throwError(() => new BadRequestException({ Message: err?.message ?? WidgetMessage.ErrorDeleting, Status: WidgetStatus.BadRequest }))),
+      catchError((err) => { return handleRxError(new BadRequestException(), WidgetEvCode.DeleteWidget, err?.message) }),
     );
   }
 
@@ -415,7 +414,7 @@ export class WidgetService {
       ),
       catchError((err) => {
         this.logger.error(`${WidgetMessage?.ErrorFetchingWidgets} ${userId}`, err);
-        return throwError(() => new BadRequestException({ Message: err?.message, Status: WidgetStatus.BadRequest }));
+        return handleRxError(new BadRequestException(), WidgetEvCode.GetWidget, err?.message);
       }),
     );
   }
@@ -430,7 +429,7 @@ export class WidgetService {
       switchMap((widget) => {
         if (!widget) {
           this.logger.warn(`${WidgetMessage?.WidgetNotFound} ${widgetId}`);
-          return throwError(() => new NotFoundException({ Message: WidgetMessage?.WidgetNotFound, Status: WidgetStatus.NotFound }));
+          return handleRxError(new NotFoundException(), WidgetEvCode.CreateWidgetMapping, WidgetMessage?.WidgetNotFound);
         }
 
         const userIdsStr = JSON.stringify(Array.isArray(userId) ? userId : [userId]);
@@ -439,7 +438,7 @@ export class WidgetService {
       }),
       catchError((err) => {
         this.logger.error(WidgetMessage?.ErrorUpdatingMapping, err);
-        return throwError(() => new BadRequestException({ Message: err?.message || WidgetMessage?.ErrorUpdatingMapping, Status: WidgetStatus.BadRequest }));
+        return handleRxError(new BadRequestException(), WidgetEvCode.CreateWidgetMapping, err?.message);
       })
     );
   }
@@ -452,7 +451,7 @@ export class WidgetService {
       switchMap(() => this.widgetRepo.findOne({ where: { id: widgetId } })),
       switchMap((existingWidget: any) => {
         if (!existingWidget) {
-          return throwError(() => new NotFoundException({ Status: 404, Message: `Widget ${widgetId} not found` }));
+          return handleRxError(new NotFoundException(), WidgetEvCode.DeleteWidgetUserMapping, WidgetMessage?.WidgetNotFound);
         }
 
         let currentUserIds: number[] = [];
@@ -467,8 +466,7 @@ export class WidgetService {
         );
 
         if (updatedUserIds.length === currentUserIds.length) {
-          return throwError(() => new NotFoundException({ Status: 404, Message: `UserId(s) ${userIdsToRemove.join(', ')} not found in widget mapping!` }),
-          );
+          return handleRxError(new NotFoundException(), WidgetEvCode.DeleteWidgetUserMapping, WidgetMessage?.UserIdNotFound);
         }
 
         existingWidget.userIds = JSON.stringify(updatedUserIds);
@@ -476,7 +474,7 @@ export class WidgetService {
           map(() => updatedUserIds)
         )
       }),
-      catchError((err) => throwError(() => new BadRequestException({ Status: err?.response?.Status || 500, Message: err?.response?.Message || 'Some error occurred while deleting widget user mapping.' })))
+      catchError((err) => {return handleRxError(new BadRequestException(), WidgetEvCode.DeleteWidgetUserMapping, err?.message)})
     );
   }
 }

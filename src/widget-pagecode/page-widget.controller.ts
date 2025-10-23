@@ -20,7 +20,7 @@ export class PageWidgetController {
     const userId = req.user?.userId ?? '';
 
     return this.pageWidgetService.createMappingPageWidgetPosition(body, tenantCode, userId).pipe(
-      map((response) => buildResponse(CreatePageWidgetMappingResponseDto, handleRxSuccess(response, WidgetEvCode?.CreatePageCodeWidgetMapping, WidgetMessage?.PageWidgetMappingCreated)))
+      map((response) => buildResponse(CreatePageWidgetMappingResponseDto, handleRxSuccess(null, WidgetEvCode?.CreatePageCodeWidgetMapping, WidgetMessage?.PageWidgetMappingCreated)))
     )
   }
 
@@ -30,9 +30,7 @@ export class PageWidgetController {
     const tenantCode = req.user?.tenantCode ?? '';
 
     return this.pageWidgetService.deleteMappingPageWidgetPosition( body, tenantCode).pipe(
-      map((response) =>
-        buildResponse(CreatePageWidgetMappingResponseDto, handleRxSuccess(response, WidgetEvCode?.DeletePageCodeWidgetMapping, WidgetMessage?.PageWidgetMappingDeleted))
-      )
+      map((response) => buildResponse(CreatePageWidgetMappingResponseDto, handleRxSuccess(null, WidgetEvCode?.DeletePageCodeWidgetMapping, WidgetMessage?.PageWidgetMappingDeleted)))
     )
   }
 }
