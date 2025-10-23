@@ -6,10 +6,11 @@ import { map } from 'rxjs/operators';
 import { WidgetPositioningService } from './widget-positioning.service';
 import { CreateWidgetPositionRequestDto, CreateWidgetPositionResponseDto } from './dto/create-widget-position.dto';
 import { buildResponse } from '../utils/build-response.util';
-import { WidgetPositioningEvCode, WidgetPositioningEvType, WidgetPositioningMessage, WidgetPositioningStatus } from './constants/widget-positioning.enum';
+import { WidgetPositioningEvCode, WidgetPositioningMessage } from './constants/widget-positioning.enum';
 import { DeleteWidgetPositionRequestDto, DeleteWidgetPositionResponseDto } from './dto/delete-widget-position.dto';
 import { CreateUserWidgetPositionRequestDto, CreateUserWidgetPositionResponseDto } from './dto/create-user-widget-position.dto';
 import { DeleteUserWidgetPositionRequestDto, DeleteUserWidgetPositionResponseDto } from './dto/delete-user-widget-position-request.dto';
+import { handleRxSuccess } from '../common/responses/success.response.common';
 
 @Controller(process.env.WIDE_PRIFIX!)
 export class WidgetPositioningController {
@@ -19,12 +20,7 @@ export class WidgetPositioningController {
     @UseGuards(AuthGuard('jwt'))
     createWidgetPosition(@Body(new ValidationPipe({ transform: true })) createDto: CreateWidgetPositionRequestDto, @Req() req: any): Observable<CreateWidgetPositionResponseDto> {
         return this.widgetPositioningService?.createWidgetPosition(createDto, req.user?.tenantCode ?? '', req.user?.userId ?? '').pipe(
-            map(() => buildResponse(CreateWidgetPositionResponseDto, {
-                Status: WidgetPositioningStatus?.Ok,
-                Message: WidgetPositioningMessage?.WidgetPositionCreated,
-                EvCode: WidgetPositioningEvCode?.CreateWidgetPosition,
-                EvType: WidgetPositioningEvType?.Success
-            }))
+            map(() => buildResponse(CreateWidgetPositionResponseDto, handleRxSuccess(null, WidgetPositioningEvCode?.CreateWidgetPosition, WidgetPositioningMessage?.WidgetPositionCreated))),
         );
     }
 
@@ -32,12 +28,7 @@ export class WidgetPositioningController {
     @UseGuards(AuthGuard('jwt'))
     deleteWidgetPosition(@Body(new ValidationPipe({ transform: true })) deleteDto: DeleteWidgetPositionRequestDto, @Req() req: any): Observable<DeleteWidgetPositionResponseDto> {
         return this.widgetPositioningService?.deleteWidgetPosition(deleteDto, req.user?.tenantCode ?? '').pipe(
-            map(() => buildResponse(DeleteWidgetPositionResponseDto, {
-                Status: WidgetPositioningStatus?.Ok,
-                Message: WidgetPositioningMessage?.WidgetPositionDeletedSuccessfully,
-                EvCode: WidgetPositioningEvCode?.DeletePageWidgetPosition,
-                EvType: WidgetPositioningEvType?.Success
-            }))
+            map(() => buildResponse(DeleteWidgetPositionResponseDto, handleRxSuccess(null, WidgetPositioningEvCode?.DeletePageWidgetPosition, WidgetPositioningMessage?.WidgetPositionDeletedSuccessfully))),
         );
     }
 
@@ -45,13 +36,7 @@ export class WidgetPositioningController {
     @UseGuards(AuthGuard('jwt'))
     createUserWidgetPosition(@Body(new ValidationPipe({ transform: true })) createDto: CreateUserWidgetPositionRequestDto, @Req() req: any): Observable<CreateUserWidgetPositionResponseDto> {
         return this.widgetPositioningService.createUserWidgetPosition(createDto, req.user?.tenantCode ?? '', req.user?.id ?? createDto.userId ?? '').pipe(
-            map(() => buildResponse(CreateUserWidgetPositionResponseDto, {
-                Status: WidgetPositioningStatus?.Ok,
-                Message: WidgetPositioningMessage?.UserWidgetPositionsCreatedUpdatedSuccessfully,
-                EvCode: WidgetPositioningEvCode?.CreateUserWidgetPosition,
-                EvType: WidgetPositioningEvType?.Success,
-            })
-            )
+            map(() => buildResponse(CreateUserWidgetPositionResponseDto, handleRxSuccess(null, WidgetPositioningEvCode?.CreateUserWidgetPosition, WidgetPositioningMessage?.UserWidgetPositionsCreatedUpdatedSuccessfully)))
         );
     }
 
@@ -60,12 +45,7 @@ export class WidgetPositioningController {
     deleteUserWidgetPosition(@Body(new ValidationPipe({ transform: true })) deleteDto: DeleteUserWidgetPositionRequestDto, @Req() req: any): Observable<DeleteUserWidgetPositionResponseDto> {
         return this.widgetPositioningService.deleteUserWidgetPosition(deleteDto, req.user?.tenantCode ?? '', req.user?.id ?? req.userId ?? '').pipe(
             map(() =>
-                buildResponse(DeleteUserWidgetPositionResponseDto, {
-                    Status: WidgetPositioningStatus?.Ok,
-                    Message: WidgetPositioningMessage?.UserWidgetPositionDeletedSuccessfully,
-                    EvCode: WidgetPositioningEvCode?.DeleteUserWidgetPosition,
-                    EvType: WidgetPositioningEvType?.Success,
-                }),
+                buildResponse(DeleteUserWidgetPositionResponseDto, handleRxSuccess(null, WidgetPositioningEvCode?.DeleteUserWidgetPosition, WidgetPositioningMessage?.UserWidgetPositionDeletedSuccessfully)),
             ),
         );
     }
