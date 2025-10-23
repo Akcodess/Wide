@@ -1,6 +1,6 @@
 
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { forkJoin, from } from 'rxjs';
+import { forkJoin, from, of } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
 import { Repository } from 'typeorm';
 
@@ -12,6 +12,7 @@ import { handleRxError } from '../common/responses/error.response.common';
 import { WidgetPositioningEvCode, WidgetPositioningMessage } from './constants/widget-positioning.enum';
 import { DeleteWidgetPositionRequestDto } from './dto/delete-widget-position.dto';
 import { CreateUserWidgetPositionRequestDto } from './dto/create-user-widget-position.dto';
+import { DeleteUserWidgetPositionRequestDto } from './dto/delete-user-widget-position-request.dto';
 
 @Injectable()
 export class WidgetPositioningService {
@@ -86,6 +87,7 @@ export class WidgetPositioningService {
     }
 
     createWidgetPosition(createDto: CreateWidgetPositionRequestDto, tenantCode: string, userId: number) {
+        this.logger.log(createDto);
         return from(this.ensureRepos(tenantCode)).pipe(
             switchMap(() => forkJoin(createDto.position.map(item => this.saveOrUpdateWidgetPosition(item, createDto, userId)))),
             tap(() => this.logger.log(WidgetPositioningMessage?.WidgetPositionCreated)),
@@ -98,6 +100,7 @@ export class WidgetPositioningService {
     }
 
     deleteWidgetPosition(deleteDto: DeleteWidgetPositionRequestDto, tenantCode: string) {
+        this.logger.log(deleteDto);
         return from(this.ensureRepos(tenantCode)).pipe(
             switchMap(() =>
                 from(this.pageWidgetPosition.delete({ widgetId: String(deleteDto.widgetId), applicationCode: deleteDto.applicationCode, pageCode: deleteDto.pageCode }))
@@ -117,6 +120,7 @@ export class WidgetPositioningService {
     }
 
     createUserWidgetPosition(createDto: CreateUserWidgetPositionRequestDto, tenantCode: string, userId: number) {
+        this.logger.log(createDto);
         return from(this.ensureRepos(tenantCode)).pipe(
             switchMap(() => {
                 const tasks = createDto.position.map((item) =>
@@ -125,11 +129,32 @@ export class WidgetPositioningService {
                 return forkJoin(tasks);
             }),
             map(() => true),
-            tap(() => { this.logger.log(WidgetPositioningMessage?.UserWidgetPositionsCreatedUpdatedSuccessfully)}),
+            tap(() => { this.logger.log(WidgetPositioningMessage?.UserWidgetPositionsCreatedUpdatedSuccessfully) }),
             catchError((err) => {
                 this.logger.error(WidgetPositioningMessage?.ErrorCreatingUpdatingUserWidgetPositions, err.stack);
                 return handleRxError(err, WidgetPositioningEvCode?.CreateUserWidgetPosition, WidgetPositioningMessage?.ErrorCreatingUpdatingUserWidgetPositions);
             })
         );
     }
+
+    deleteUserWidgetPosition(deleteDto: DeleteUserWidgetPositionRequestDto, tenantCode: string, userId: string) {
+        this.logger.log(deleteDto);
+        return from(this.ensureRepos(tenantCode)).pipe(
+            switchMap(() =>
+                from(this.userWidgetPosition.delete({ widgetId: String(deleteDto.widgetId), applicationCode: deleteDto.applicationCode, userId: String(deleteDto.userId || userId) })),
+            ),
+            switchMap((result) => {
+                if (!result.affected || result.affected === 0) {
+                    return handleRxError(new NotFoundException(WidgetPositioningMessage?.NoMatchingWidgetIdApplicationCodeOrUserIdFound), WidgetPositioningEvCode?.DeleteUserWidgetPosition, WidgetPositioningMessage?.NoMatchingWidgetIdApplicationCodeOrUserIdFound);
+                }
+                return of(true);
+            }),
+            tap(() => this.logger.log(WidgetPositioningMessage?.UserWidgetPositionDeletedSuccessfully)),
+            catchError((err) => {
+                this.logger.error(WidgetPositioningMessage?.ErrorDeletingUserWidgetPosition, err.stack);
+                return handleRxError(err, WidgetPositioningEvCode?.DeleteUserWidgetPosition, WidgetPositioningMessage?.ErrorDeletingUserWidgetPosition);
+            }),
+        );
+    }
+
 }

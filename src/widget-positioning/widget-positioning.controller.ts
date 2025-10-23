@@ -9,6 +9,7 @@ import { buildResponse } from '../utils/build-response.util';
 import { WidgetPositioningEvCode, WidgetPositioningEvType, WidgetPositioningMessage, WidgetPositioningStatus } from './constants/widget-positioning.enum';
 import { DeleteWidgetPositionRequestDto, DeleteWidgetPositionResponseDto } from './dto/delete-widget-position.dto';
 import { CreateUserWidgetPositionRequestDto, CreateUserWidgetPositionResponseDto } from './dto/create-user-widget-position.dto';
+import { DeleteUserWidgetPositionRequestDto, DeleteUserWidgetPositionResponseDto } from './dto/delete-user-widget-position-request.dto';
 
 @Controller('wide-api')
 export class WidgetPositioningController {
@@ -51,6 +52,21 @@ export class WidgetPositioningController {
                 EvType: WidgetPositioningEvType?.Success,
             })
             )
+        );
+    }
+
+    @Delete('user-widget-pos')
+    @UseGuards(AuthGuard('jwt'))
+    deleteUserWidgetPosition(@Body(new ValidationPipe({ transform: true })) deleteDto: DeleteUserWidgetPositionRequestDto, @Req() req: any): Observable<DeleteUserWidgetPositionResponseDto> {
+        return this.widgetPositioningService.deleteUserWidgetPosition(deleteDto, req.user?.tenantCode ?? '', req.user?.id ?? req.userId ?? '').pipe(
+            map(() =>
+                buildResponse(DeleteUserWidgetPositionResponseDto, {
+                    Status: WidgetPositioningStatus?.Ok,
+                    Message: WidgetPositioningMessage?.UserWidgetPositionDeletedSuccessfully,
+                    EvCode: WidgetPositioningEvCode?.DeleteUserWidgetPosition,
+                    EvType: WidgetPositioningEvType?.Success,
+                }),
+            ),
         );
     }
 }

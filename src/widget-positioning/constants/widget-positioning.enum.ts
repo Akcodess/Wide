@@ -5,13 +5,17 @@ export enum WidgetPositioningMessage {
     ErrorDeletingWidgetPosition = "Error deleting widget position",
     WidgetPositionDeletedSuccessfully = "Widget position deleted successfully",
     UserWidgetPositionsCreatedUpdatedSuccessfully = "User widget positions created-updated successfully",
-    ErrorCreatingUpdatingUserWidgetPositions = "Error creating-updating user widget positions"
+    ErrorCreatingUpdatingUserWidgetPositions = "Error creating-updating user widget positions",
+    NoMatchingWidgetIdApplicationCodeOrUserIdFound = "No matching widgetId, applicationCode, or userId found",
+    ErrorDeletingUserWidgetPosition = "Error deleting user widget position",
+    UserWidgetPositionDeletedSuccessfully = "User widget position deleted successfully"
 }
 
 export enum WidgetPositioningEvCode {
     CreateWidgetPosition = "CreateWidgetPosition",
     DeletePageWidgetPosition = "DeletePageWidgetPosition",
-    CreateUserWidgetPosition = "CreateUserWidgetPosition"
+    CreateUserWidgetPosition = "CreateUserWidgetPosition",
+    DeleteUserWidgetPosition = "DeleteUserWidgetPosition"
 }
 
 export enum WidgetPositioningEvType {

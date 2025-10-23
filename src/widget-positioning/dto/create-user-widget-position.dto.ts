@@ -46,7 +46,7 @@ export class CreateUserWidgetPositionResponseDto {
     Status: number;
 
     @Expose()
-    @Transform(({ value }) => value ?? WidgetPositioningMessage?.WidgetPositionDeletedSuccessfully)
+    @Transform(({ value }) => value ?? WidgetPositioningMessage?.UserWidgetPositionsCreatedUpdatedSuccessfully)
     Message: string;
 
     @Expose()
@@ -54,7 +54,7 @@ export class CreateUserWidgetPositionResponseDto {
     TimeStamp: string;
 
     @Expose()
-    @Transform(({ value }) => value ?? WidgetPositioningEvCode?.DeletePageWidgetPosition)
+    @Transform(({ value }) => value ?? WidgetPositioningEvCode?.CreateUserWidgetPosition)
     EvCode: string;
 
     @Expose()
