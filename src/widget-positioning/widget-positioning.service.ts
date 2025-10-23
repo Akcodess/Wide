@@ -1,5 +1,5 @@
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { forkJoin, from } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import { PageWidgetPosition } from './page-widget-position.entity';
 import { CreateWidgetPositionRequestDto } from './dto/create-widget-position.dto';
 import { handleRxError } from '../common/responses/error.response.common';
 import { WidgetPositioningEvCode, WidgetPositioningMessage } from './constants/widget-positioning.enum';
+import { DeleteWidgetPositionRequestDto } from './dto/delete-widget-position.dto';
 
 @Injectable()
 export class WidgetPositioningService {
@@ -56,6 +57,24 @@ export class WidgetPositioningService {
             catchError(err => {
                 this.logger.error(WidgetPositioningMessage?.ErrorCreatingUpdatingWidgetPositions, err.stack);
                 return handleRxError(err, WidgetPositioningEvCode?.CreateWidgetPosition, WidgetPositioningMessage?.ErrorCreatingUpdatingWidgetPositions);
+            })
+        );
+    }
+
+    deleteWidgetPosition(deleteDto: DeleteWidgetPositionRequestDto, tenantCode: string) {
+        return from(this.ensureRepos(tenantCode)).pipe(
+            switchMap(() =>
+                from(this.pageWidgetPosition.delete({ widgetId: String(deleteDto.widgetId), applicationCode: deleteDto.applicationCode, pageCode: deleteDto.pageCode }))
+            ),
+            switchMap((result) => {
+                if (!result.affected || result.affected === 0) {
+                    return handleRxError(new NotFoundException(WidgetPositioningMessage?.NoMatchingWidgetPositionFound), WidgetPositioningEvCode?.DeletePageWidgetPosition, WidgetPositioningMessage?.NoMatchingWidgetPositionFound);
+                }
+                return from([true]);
+            }),
+            catchError((err) => {
+                this.logger.error(WidgetPositioningMessage?.ErrorDeletingWidgetPosition, err.stack);
+                return handleRxError(err, WidgetPositioningEvCode?.DeletePageWidgetPosition, WidgetPositioningMessage?.ErrorDeletingWidgetPosition);
             })
         );
     }
