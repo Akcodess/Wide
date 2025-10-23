@@ -49,7 +49,7 @@ export class WidgetController {
       map(() =>
         buildResponse(DeleteWidgetUserMappingResponseDto, {
           Status: WidgetStatus.Ok,
-          Message: `UserId(s) ${body?.userId} removed from widget mapping successfully!`,
+          Message: `${body?.userId} UserId(s) removed from widget mapping successfully!`,
           EvCode: WidgetEvCode.UpdateWidgetMapping,
           EvType: WidgetEvType.Success,
         }),

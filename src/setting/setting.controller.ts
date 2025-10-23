@@ -5,7 +5,6 @@ import { map, Observable } from 'rxjs';
 import { GetSettingsRequestDto, GetSettingsResponseDto } from './dto/get-settings.dto';
 import { SettingService } from './setting.service';
 import { buildResponse } from '../utils/build-response.util';
-import { handleRxSuccess } from '../common/responses/success.response.common';
 import { SettingEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from './constants/setting.enum';
 import { CreateSettingRequestDto, CreateSettingsResponseDto } from './dto/create-setting.dto';
 import { UpdateSettingRequestDto, UpdateSettingsResponseDto } from './dto/update-setting.dto';
