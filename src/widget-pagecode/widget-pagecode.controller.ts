@@ -9,7 +9,7 @@ import { WidgetEvCode, WidgetMessage } from './constants/widget.pagecode.enums';
 import { buildResponse } from '../utils/build-response.util';
 import { handleRxSuccess } from '../common/responses/success.response.common';
 
-@Controller('wide-api/widget-pagecode')
+@Controller(`${process.env.WIDE_PRIFIX}/widget-pagecode`)
 export class WidgetPagecodeController {
   constructor(private readonly widgetPagecodeService: WidgetPagecodeService) { }
 

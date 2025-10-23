@@ -21,7 +21,7 @@ import { CreateWidgetMappingDto } from './dto/widget-mapping.request.dto';
 import { CreateWidgetMappingResponseDto } from './dto/create-widget-mapping.response.dto';
 import { DeleteWidgetUserMappingResponseDto } from './dto/delete-widget-mapping.response';
 
-@Controller('wide-api/widget')
+@Controller(`${process.env.WIDE_PRIFIX}/widget`)
 export class WidgetController {
   constructor(private readonly widgetService: WidgetService) { }
 

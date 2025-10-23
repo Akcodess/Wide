@@ -11,7 +11,7 @@ import { DeleteWidgetPositionRequestDto, DeleteWidgetPositionResponseDto } from 
 import { CreateUserWidgetPositionRequestDto, CreateUserWidgetPositionResponseDto } from './dto/create-user-widget-position.dto';
 import { DeleteUserWidgetPositionRequestDto, DeleteUserWidgetPositionResponseDto } from './dto/delete-user-widget-position-request.dto';
 
-@Controller('wide-api')
+@Controller(process.env.WIDE_PRIFIX!)
 export class WidgetPositioningController {
     constructor(private readonly widgetPositioningService: WidgetPositioningService) { }
 

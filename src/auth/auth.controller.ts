@@ -7,7 +7,7 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('/wide-api/register')
+  @Post(`${process.env.WIDE_PRIFIX}/register`)
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
     return this.authService.register(registerDto);
   }

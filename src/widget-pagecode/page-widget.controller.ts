@@ -9,8 +9,7 @@ import { WidgetEvCode, WidgetMessage } from './constants/widget.pagecode.enums';
 import { DeletePageWidgetMappingDto } from './dto/page-widget-delete-mapping.dto';
 import { handleRxSuccess } from '../common/responses/success.response.common';
 
-@Controller('wide-api/page-widget')
-@UseGuards(AuthGuard('jwt'))
+@Controller(`${process.env.WIDE_PRIFIX}/page-widget`)
 export class PageWidgetController {
   constructor(private readonly pageWidgetService: WidgetPagecodeService) { }
 

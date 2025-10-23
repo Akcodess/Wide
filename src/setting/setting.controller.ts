@@ -10,7 +10,7 @@ import { CreateSettingRequestDto, CreateSettingsResponseDto } from './dto/create
 import { UpdateSettingRequestDto, UpdateSettingsResponseDto } from './dto/update-setting.dto';
 import { DeleteSettingResponseDto } from './dto/delete-setting.dto';
 
-@Controller('wide-api/setting')
+@Controller(`${process.env.WIDE_PRIFIX}/setting`)
 export class SettingController {
     constructor(private readonly settingService: SettingService) { }
 
