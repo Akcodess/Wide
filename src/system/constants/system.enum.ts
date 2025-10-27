@@ -1,3 +1,8 @@
+export enum SystemEvMessage {
+    VersionInfoFetched = "Version information fetched successfully",
+    ErrorFetchingVersion = "Error fetching version information"
+}
+
 export enum SystemEvCode {
     VersionInfoFetch = "VersionInfoFetch"
 }
