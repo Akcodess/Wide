@@ -8,6 +8,7 @@ import { WidgetPagecodeModule } from './widget-pagecode/widget-pagecode.module';
 import { WidgetPositioningModule } from './widget-positioning/widget-positioning.module';
 import { WidgetModule } from './widget/widget.module';
 import { TenantModule } from './tenant/tenant.module';
+import { SystemModule } from './system/system.module';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { TenantModule } from './tenant/tenant.module';
         envFilePath: '.env',
       }
     ),
-    TenantModule, AuthModule, SettingModule, UserWidgetModule, WidgetPagecodeModule, WidgetPositioningModule, WidgetModule,
+    TenantModule, AuthModule, SettingModule, UserWidgetModule, WidgetPagecodeModule, WidgetPositioningModule, WidgetModule, SystemModule,
   ]
 })
 export class AppModule { }

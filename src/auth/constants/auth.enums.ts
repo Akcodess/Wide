@@ -16,6 +16,7 @@ export enum DefaultText {
 
 export enum DefaultStatus {
   Ok = 200,
+  BadRequest = 400
 }
 
 export enum ValidationMessage {

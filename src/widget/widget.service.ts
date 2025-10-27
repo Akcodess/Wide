@@ -129,7 +129,7 @@ export class WidgetService {
         .where('w.ApplicationCode = :applicationCode', { applicationCode })
         .andWhere('w.EntityState = :entityState', { entityState: 1 })
         .andWhere('w.IsShow = :isShow', { isShow: 1 })
-        .andWhere('(w.UserIds IS NULL OR JSON_LENGTH(w.UserIds) = 0 OR JSON_CONTAINS(w.UserIds, :userIdJson) = true)', { userIdJson: JSON.stringify(Number(userId)) })
+        .andWhere(`(w.UserIds IS NULL OR w.UserIds IN ('', '[]', 'null', '\"[]\"') OR JSON_CONTAINS(w.UserIds, :userIdJson))`, { userIdJson: JSON.stringify(Number(userId)) })
         .select([
           'w.Id as Id',
           'w.ApplicationCode as ApplicationCode',
@@ -184,7 +184,7 @@ export class WidgetService {
         where: [
           { applicationCode, entityState: 1, isShow: 1, userIds: IsNull() },
           { applicationCode, entityState: 1, isShow: 1, userIds: Raw((alias) => `${alias} = '[]'`) },
-          { applicationCode, entityState: 1, isShow: 1, userIds: Raw((alias) => `JSON_CONTAINS(${alias}, '[${userId}]')`) },
+          { applicationCode, entityState: 1, isShow: 1, userIds: Raw((alias) => `(${alias} LIKE '%[${userId},%' OR ${alias} LIKE '%,${userId},%' OR ${alias} LIKE '%,${userId}]%' OR ${alias} = '[${userId}]')`) },
         ],
       }),
     ).pipe(
@@ -474,7 +474,7 @@ export class WidgetService {
           map(() => updatedUserIds)
         )
       }),
-      catchError((err) => {return handleRxError(new BadRequestException(), WidgetEvCode.DeleteWidgetUserMapping, err?.message)})
+      catchError((err) => { return handleRxError(new BadRequestException(), WidgetEvCode.DeleteWidgetUserMapping, err?.message) })
     );
   }
 }

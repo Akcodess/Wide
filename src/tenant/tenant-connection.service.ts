@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, DataSourceOptions, Repository, EntityTarget, ObjectLiteral } from 'typeorm';
 import { baseTenantDataSourceOptions } from './database.config';
 
 @Injectable()
 export class TenantConnectionService {
+  private readonly logger = new Logger(TenantConnectionService.name);
   private readonly connections: Map<string, DataSource> = new Map();
 
   private buildOptions(tenantCode: string): DataSourceOptions {
@@ -12,7 +13,7 @@ export class TenantConnectionService {
       database: `${process.env.DB_DATABASE}_${tenantCode}`,
       name: `${process.env.DB_DATABASE}_${tenantCode}`,
       entities: baseTenantDataSourceOptions.entities as any,
-      synchronize: false,
+      synchronize: true,
     } as DataSourceOptions;
   }
 
@@ -44,9 +45,33 @@ export class TenantConnectionService {
     await this.createDatabaseIfNotExists(tenantCode);
 
     const dataSource = new DataSource(this.buildOptions(tenantCode));
-    await dataSource.initialize();
-    this.connections.set(key, dataSource);
-    return dataSource;
+    try {
+      await dataSource.initialize();
+      this.connections.set(key, dataSource);
+      return dataSource;
+    } catch (err: any) {
+      // If schema/table already exists error occurs, log and try to return a connected datasource
+      const msg = err?.message ?? '';
+      if (msg.toLowerCase().includes('already exists') || msg.toLowerCase().includes('exists')) {
+        // Attempt to get an existing connection from the pool
+        const ds = this.connections.get(key);
+        if (ds && ds.isInitialized) return ds;
+        // As a fallback, try to initialize again without synchronize to avoid recreate
+        try {
+          const opts = { ...this.buildOptions(tenantCode), synchronize: false } as DataSourceOptions;
+          const fallback = new DataSource(opts);
+          await fallback.initialize();
+          this.connections.set(key, fallback);
+          return fallback;
+        } catch (innerErr) {
+          throw innerErr;
+        }
+      }
+
+      // Unknown error: rethrow
+      this.logger.error(msg);
+      throw err;
+    }
   }
 
   async getDataSource(tenantCode: string): Promise<DataSource> {
@@ -61,5 +86,3 @@ export class TenantConnectionService {
     return ds.getRepository<T>(entity);
   }
 }
-
-
