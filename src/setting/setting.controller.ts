@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards, ValidationPipe, ParseIntPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { map, Observable } from 'rxjs';
+import { ApiResponse } from '@nestjs/swagger';
 
 import { GetSettingsRequestDto, GetSettingsResponseDto } from './dto/get-settings.dto';
 import { SettingService } from './setting.service';
 import { buildResponse } from '../utils/build-response.util';
-import { SettingEvCode, WidgetEvType, WidgetMessage, WidgetStatus } from './constants/setting.enum';
+import { SettingEvCode, WidgetMessage, WidgetStatus } from './constants/setting.enum';
 import { CreateSettingRequestDto, CreateSettingsResponseDto } from './dto/create-setting.dto';
 import { UpdateSettingRequestDto, UpdateSettingsResponseDto } from './dto/update-setting.dto';
 import { DeleteSettingResponseDto } from './dto/delete-setting.dto';
@@ -17,6 +18,8 @@ export class SettingController {
 
     @Get()
     @UseGuards(AuthGuard('jwt'))
+    @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.SettingsFetched, type: GetSettingsResponseDto })
+    @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.ErrorFetchingSettings })
     getSettings(@Query(new ValidationPipe({ transform: true })) query: GetSettingsRequestDto, @Req() req: any): Observable<GetSettingsResponseDto> {
         const tenantCode = req.user?.tenantCode ?? '';
 
@@ -27,6 +30,8 @@ export class SettingController {
 
     @Post()
     @UseGuards(AuthGuard('jwt'))
+    @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.SettingCreated, type: CreateSettingsResponseDto })
+    @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.ErrorCreatingSetting })
     createSetting(@Body(new ValidationPipe({ transform: true })) createDto: CreateSettingRequestDto, @Req() req: any): Observable<CreateSettingsResponseDto> {
         return this.settingService?.createSetting(createDto, req.user?.userId ?? '', req.user?.tenantCode ?? '').pipe(
             map(result => buildResponse(CreateSettingsResponseDto, handleRxSuccess(result, SettingEvCode?.CreateSetting, WidgetMessage?.SettingCreated))),
@@ -35,6 +40,8 @@ export class SettingController {
 
     @Put()
     @UseGuards(AuthGuard('jwt'))
+    @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.SettingUpdated, type: UpdateSettingsResponseDto })
+    @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.ErrorUpdatingSetting })
     updateSetting(@Body(new ValidationPipe({ transform: true })) updateDto: UpdateSettingRequestDto, @Req() req: any): Observable<UpdateSettingsResponseDto> {
         return this.settingService?.updateSetting(updateDto, req.user?.tenantCode ?? '', req.user.userId).pipe(
             map(result => buildResponse(UpdateSettingsResponseDto, handleRxSuccess(null, SettingEvCode?.UpdateSetting, WidgetMessage?.SettingUpdated))),
@@ -43,6 +50,8 @@ export class SettingController {
 
     @Delete(":id")
     @UseGuards(AuthGuard('jwt'))
+    @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.SettingDeleted, type: DeleteSettingResponseDto })
+    @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.ErrorDeletingSetting })
     deleteSetting(@Param('id', ParseIntPipe) id: number, @Req() req: any): Observable<DeleteSettingResponseDto> {
         return this.settingService?.deleteSetting({ id }, req.user?.tenantCode ?? '').pipe(
             map(result => buildResponse(DeleteSettingResponseDto, handleRxSuccess(null, SettingEvCode?.DeleteSetting, WidgetMessage?.SettingDeleted))),
