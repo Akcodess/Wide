@@ -1,8 +1,10 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { Expose } from 'class-transformer';
 import { WidgetMessage } from "../constants/widget.enums";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class GetWidgetByCodeDto {
+  @ApiProperty()
   @Expose()
   @IsNotEmpty({ message: WidgetMessage?.WidgetCodeRequired })
   @IsString({ message: WidgetMessage?.WidgetCodeMustBeString })

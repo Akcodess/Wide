@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Post, Query, UseGuards, Req, Patch, Param, Put, Delete, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { map, Observable } from 'rxjs';
+import { ApiResponse } from '@nestjs/swagger';
 
 import { WidgetService } from './widget.service';
 import { GetWidgetsQueryDto } from './dto/get-widgets.query.dto';
 import { GetWidgetsResponseDto } from './dto/get-widgets.response.dto';
-import { WidgetEvCode, WidgetMessage } from './constants/widget.enums';
+import { WidgetEvCode, WidgetMessage, WidgetStatus } from './constants/widget.enums';
 import { CreateWidgetRequestDto } from './dto/create-widget.request.dto';
 import { CreateWidgetResponseDto } from './dto/create-widget.response.dto';
 import { WidgetItemDto } from './dto/get-widgets.response.dto';
@@ -28,6 +29,8 @@ export class WidgetController {
 
   @Patch('/user')
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.WidgetMappingCreated, type: CreateWidgetMappingResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.UserIdNotFound })
   createWidgetMapping(@Body() body: CreateWidgetMappingDto, @Req() req: any): Observable<CreateWidgetMappingResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.createWidgetMapping(body, tenantCode).pipe(
@@ -39,6 +42,8 @@ export class WidgetController {
 
   @Delete('/user')
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage.WidgetMappingDeleted, type: DeleteWidgetUserMappingResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.UserIdNotFound })
   deleteWidgetUserMapping(@Body() body: CreateWidgetMappingDto, @Req() req: any): Observable<DeleteWidgetUserMappingResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.deleteWidgetUserMapping(body, tenantCode).pipe(
@@ -50,6 +55,8 @@ export class WidgetController {
 
   @Get('/user')
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.RetrievedSuccessfully, type: GetWidgetsByUserIdResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.ErrorFetchingWidgets })
   getWidgetsByUserId(@Query() query: GetWidgetsByUserIdDto, @Req() req: any): Observable<GetWidgetsByUserIdResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.getWidgetsByUserId(query, tenantCode).pipe(
@@ -59,6 +66,8 @@ export class WidgetController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.AddedSuccessfully, type: CreateWidgetResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.ErrorCreating })
   createWidget(@Body() body: CreateWidgetRequestDto, @Req() req: any): Observable<CreateWidgetResponseDto> {
     const userId = req.user?.userId ?? '';
     const tenantCode = req.user?.tenantCode ?? '';
@@ -71,6 +80,8 @@ export class WidgetController {
 
   @Get()
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.RetrievedSuccessfully, type: GetWidgetsResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.NoWidgetsFound })
   getWidgets(@Query() query: GetWidgetsQueryDto, @Req() req: any): Observable<GetWidgetsResponseDto> {
     const userId = req.user?.userId ?? '';
     const tenantCode = req.user?.tenantCode ?? '';
@@ -83,6 +94,8 @@ export class WidgetController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.WidgetUpdated, type: UpdateWidgetResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.ErrorUpdating })
   updateWidget(@Param('id') id: string, @Req() req: any, @Body() body: UpdateWidgetDto): Observable<UpdateWidgetResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.updateWidget(id, body, tenantCode, req.user?.userId ?? '').pipe(
@@ -94,6 +107,8 @@ export class WidgetController {
 
   @Put()
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.WidgetLayoutUpdated, type: UpdateWidgetResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.NoWidgetsFound })
   updateWidgetLayout(@Req() req: any, @Body() body: UpdateWidgetLayoutItemDto[]): Observable<UpdateWidgetResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.updateWidgetLayout(body, tenantCode, req.user?.userId ?? '').pipe(
@@ -105,6 +120,8 @@ export class WidgetController {
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.WidgetDeleted, type: UpdateWidgetResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.NoWidgetsFound })
   deleteWidget(@Param('id') id: string, @Req() req: any): Observable<UpdateWidgetResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
     return this.widgetService.deleteWidget(id, tenantCode).pipe(
@@ -116,6 +133,8 @@ export class WidgetController {
 
   @Get(':code')
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: WidgetStatus?.Ok, description: WidgetMessage?.WidgetFoundByCode, type: GetWidgetByCodeResponseDto })
+  @ApiResponse({ status: WidgetStatus?.BadRequest, description: WidgetMessage?.WidgetCodeNotFound })
   getWidgetByWidgetCode(@Param(new ValidationPipe({ transform: true })) params: GetWidgetByCodeDto, @Req() req: any): Observable<GetWidgetByCodeResponseDto> {
     const tenantCode = req.user?.tenantCode ?? '';
 
